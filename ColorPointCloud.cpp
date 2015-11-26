@@ -1,6 +1,8 @@
 // Created by Heresy @ 2015/02/03
 // Blog Page: https://kheresy.wordpress.com/2015/02/11/k4w-v2-part-6-draw-with-opengl/
 // This sample is used to show Kinect data in cloud points form.
+// Revised by YongYuH @2015/11/26
+
 
 // Standard Library
 #include <array>
