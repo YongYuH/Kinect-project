@@ -496,7 +496,6 @@ void watershed(char* absdiff_color_image, char* watershed_segment_image)
 	markers = fg + bg;
 
 	markers.convertTo(markers, CV_32S);
-	// To test..
 	cv::watershed(absdiff_color, markers);
 
 	markers.convertTo(markers, CV_8U);
@@ -601,19 +600,13 @@ void capture_human_point() {
 
 		if (pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, human_color.data, ColorImageFormat_Bgra) == S_OK)	{
 			if ((int)g_pColorBuffer[0] != 0) {
-				//human_color = human_color.clone();
-				// To modify...
 				cv::cvtColor(human_color, human_gray, CV_RGB2GRAY);		// 彩色轉灰階
-				//cv::imshow(win_name, human_color);					// 顯示彩色畫面
 				cv::imwrite(human_color_image, human_color);			// 儲存彩色畫面
 				absdiff(human_color_image, background_image, absdiff_color_image, absdiff_gray_image, absdiff_binary_image);
 				watershed(absdiff_color_image, watershed_segment_image);
 				g_CaptureNum++;
-				//cout << "Press any key on the \"Color Image\" window to continue!" << endl;
-				//cv::waitKey();
 			}
 		}
-		//cv::destroyWindow(win_name);
 		pCFrame->Release();
 		pCFrame = nullptr;
 	}
@@ -804,7 +797,6 @@ void CKinectcaptureDlg::OnBnClickedButton_Capture()
 	// coordinate mapper code
 	map_coordinate();
 
-	// To modify...
 	while (g_CaptureNum <= 7) {
 		joint_driven();
 	}
