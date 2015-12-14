@@ -44,13 +44,13 @@
 
 using namespace std;
 
-// Threshold for mask
+// Threshold for mask (unit:m)
 #define ANKLE_HEIGHT (750)
-#define X_BACK (3100)
-#define X_FRONT (1900)
-#define Y_LEFT (690)
-#define Y_RIGHT (-690)
-#define Z_HEIGHT (-950)
+#define X_BACK (3.100)
+#define X_FRONT (1.900)
+#define Y_LEFT (0.690)
+#define Y_RIGHT (-0.690)
+#define Z_HEIGHT (-0.950)
 
 // global variables
 IKinectSensor*		g_pSensor = nullptr;
@@ -71,12 +71,17 @@ UINT	g_uColorBufferSize = 0;
 
 UINT16*	g_pDepthBuffer = nullptr;
 BYTE*	g_pColorBuffer = nullptr;
+BYTE*   g_pTotalColor = nullptr;
 CameraSpacePoint* g_pCSPoints = nullptr;
 CameraSpacePoint* g_totalPoints = nullptr;
 
 // global variables
 cv::Mat	g_mColorImg;
 cv::Mat	g_mImg = cv::Mat(g_iColorHeight, g_iColorWidth, CV_8UC4);
+
+IBody* pBody;
+Joint aJoints[JointType::JointType_Count];
+
 bool g_isCapture = false;
 int g_CaptureNum = 0;					// 抓取到的人體數目
 
@@ -100,13 +105,14 @@ float g_current_average_velocity = 0.0;
 float g_total_velocity = 0.0;
 float g_average_velocity = 0.0;
 
+// global output file name
 char g_watershed_segment_image[30] = "watershed_segment0.bmp";
-
 char g_human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
+char g_color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
 
 // Debug:output the velocity of joints
-ofstream current_average_velocityTXT("current_average_velocity.txt");
-ofstream average_velocityTXT("average_velocity.txt");
+//ofstream current_average_velocityTXT("current_average_velocity.txt");
+//ofstream average_velocityTXT("average_velocity.txt");
 
 // 對 App About 使用 CAboutDlg 對話方塊
 
@@ -285,6 +291,7 @@ void color_source() {
 		g_pCSPoints = new CameraSpacePoint[g_uColorPointNum];
 		g_totalPoints = new CameraSpacePoint[8 * g_uColorPointNum];
 		g_pColorBuffer = new BYTE[4 * g_uColorPointNum];
+		g_pTotalColor = new BYTE[8 * 4 * g_uColorPointNum];
 	}
 	pFrameDescription->Release();
 	pFrameDescription = nullptr;
@@ -371,7 +378,7 @@ void body_source() {
 void map_coordinate() {
 	// Read depth data
 	if (g_pSensor->get_CoordinateMapper(&g_pCoordinateMapper) != S_OK) {
-		std::cout << "Can't get coordinate mapper" << std::endl;
+		std::cerr << "Can't get coordinate mapper" << std::endl;
 		return;
 	}
 }
@@ -385,43 +392,6 @@ void DrawLine(cv::Mat& rImg, const Joint& rJ1, const Joint& rJ2, ICoordinateMapp
 	pCMapper->MapCameraPointToColorSpace(rJ2.Position, &ptJ2);
 
 	cv::line(rImg, cv::Point((int)ptJ1.X, (int)ptJ1.Y), cv::Point((int)ptJ2.X, (int)ptJ2.Y), cv::Vec3b(0, 0, 255), 5);
-}
-
-void get_latest_color_frame() {
-	IColorFrame* pColorFrame = nullptr;
-	while (g_pColorFrameReader->AcquireLatestFrame(&pColorFrame) != S_OK) {
-		if (g_pColorFrameReader->AcquireLatestFrame(&pColorFrame) == S_OK)
-			break;		
-	}	
-	g_mColorImg = cv::Mat(g_iColorHeight, g_iColorWidth, CV_8UC4);
-	// Copy to OpenCV image
-	if (pColorFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, g_mColorImg.data, ColorImageFormat_Bgra) != S_OK)	 {
-		cerr << "Color data copy error!" << endl;
-	}
-	// release color frame
-	pColorFrame->Release();
-}
-
-void get_latest_frame() {
-	// Read color data
-	IColorFrame* pCFrame = nullptr;
-	if (g_pColorFrameReader->AcquireLatestFrame(&pCFrame) == S_OK)
-	{
-		pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, g_pColorBuffer, ColorImageFormat_Rgba);
-		pCFrame->Release();
-		pCFrame = nullptr;
-	}
-
-	// Read depth data
-	IDepthFrame* pDFrame = nullptr;
-	if (g_pDepthFrameReader->AcquireLatestFrame(&pDFrame) == S_OK)
-	{
-		pDFrame->CopyFrameDataToArray(g_uDepthPointNum, g_pDepthBuffer);
-		pDFrame->Release();
-		pDFrame = nullptr;
-		// map to camera space
-		g_pCoordinateMapper->MapColorFrameToCameraSpace(g_uDepthPointNum, g_pDepthBuffer, g_uColorPointNum, g_pCSPoints);
-	}
 }
 
 void draw_joint_position(IBody* pBody, Joint* aJoints) {
@@ -455,14 +425,6 @@ void draw_joint_position(IBody* pBody, Joint* aJoints) {
 		DrawLine(g_mImg, aJoints[JointType_HipRight], aJoints[JointType_KneeRight], g_pCoordinateMapper);
 		DrawLine(g_mImg, aJoints[JointType_KneeRight], aJoints[JointType_AnkleRight], g_pCoordinateMapper);
 		DrawLine(g_mImg, aJoints[JointType_AnkleRight], aJoints[JointType_FootRight], g_pCoordinateMapper);
-	}
-}
-
-void get_latest_body_frame(IBodyFrame* pBodyFrame) {
-	while (true) {
-		if (pBodyFrame->GetAndRefreshBodyData(g_iBodyCount, g_aBodyData) == S_OK) {
-			break;
-		}
 	}
 }
 
@@ -527,79 +489,13 @@ void watershed(char* absdiff_color_image, char* watershed_segment_image)
 	markers.release();
 }
 
-// void human_mask(input mask image, output mask asc file)
-void human_mask()
-{
-	// Size of input picture, the watershed segmented picture
-	const int width = g_iColorWidth;
-	const int height = g_iColorHeight;
-	const long int total_pixels = width * height;
-
-	cv::Mat img = cv::imread(g_watershed_segment_image);
-	// An one dimensional array to index whether the grayscale of each pixel is white
-	short* idx;
-	idx = new short[total_pixels];
-	memset(idx, 0, total_pixels*sizeof(short));
-	// load grayscale of each pixel in the mask
-	for (int j = 0; j < img.rows; j++) {
-		for (int i = 0; i < img.cols; i++) {
-			cv::Scalar intensity = img.at<cv::Vec3b>(j, i);
-			// when the mask is white
-			if (intensity.val[0] == 255) {
-				idx[i + j * img.cols] = 1;
-			}
-		}
-	}
-
-	// initialize the output asc file
-	std::fstream human_3Dpoints(g_human_3Dpoints_asc, ios::in | ios::out);
-	//std::ofstream colored_human_asc("colored_human_point.asc");
-
-	//int pixel_height_of_ankle = 750;
-	// output human point cloud above the ankle segmented by bounding box
-
-	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
-		if (g_totalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z < X_BACK && g_totalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_totalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
-			human_3Dpoints << -g_totalPoints[(g_CaptureNum)* total_pixels + i].Z << " " << g_totalPoints[(g_CaptureNum)* total_pixels + i].X << " " << g_totalPoints[(g_CaptureNum)* total_pixels + i].Y << " " << endl;
-		}
-		//if (Z[i] < X_FRONT && Z[i] != 0 && Z[i] > X_BACK && X[i] < Y_LEFT && X[i] > Y_RIGHT && Y[i] > Z_HEIGHT) {
-		//	colored_human_asc << X[i] << " " << Y[i] << " " << Z[i] << " " << endl;
-		//}
-	}
-
-	// output human point cloud below the ankle segmented by Absdiff  
-	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
-		if (idx[i] == 1) {
-			if (g_totalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_totalPoints[i].Z < X_BACK && g_totalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_totalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
-				human_3Dpoints << -g_totalPoints[(g_CaptureNum)* total_pixels + i].Z << " " << g_totalPoints[(g_CaptureNum)* total_pixels + i].X << " " << g_totalPoints[(g_CaptureNum)* total_pixels + i].Y << " " << endl;
-			}
-		}
-		//if (idx[i]) {
-		//	if (Z[i] < X_FRONT && Z[i] != 0 && Z[i] > X_BACK && X[i] < Y_LEFT && X[i] > Y_RIGHT && Y[i] > Z_HEIGHT) {
-		//		colored_human_asc << X[i] << " " << Y[i] << " " << Z[i] << " " << endl;
-		//	}
-		//}
-	}
-
-	// release the memory of array
-	delete[] idx;
-	// close the asc file
-	human_3Dpoints.close();
-	//colored_human_asc.close();
-	// release the memory of opencv matrix
-	//markers.release();
-	//cv::waitKey(0);
-}
-
 void capture_human_image() {
 	// Read color data
 	IColorFrame* pCFrame = nullptr;
 	if (g_pColorFrameReader->AcquireLatestFrame(&pCFrame) == S_OK) {
-		// 使用openCV擷取Kinect畫面
+		// Use OpenCV to get the image from Kinect
 		cv::Mat	human_color(g_iColorHeight, g_iColorWidth, CV_8UC4);
 		cv::Mat human_gray(g_iColorHeight, g_iColorWidth, CV_8UC4);
-		//char* win_name = "Color Image";
-		//cv::namedWindow(win_name, 0);									// 創造彩色圖片顯示視窗
 
 		char* background_image = "background_color.bmp";
 
@@ -616,138 +512,136 @@ void capture_human_image() {
 
 		if (pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, human_color.data, ColorImageFormat_Bgra) == S_OK)	{
 			if ((int)g_pColorBuffer[0] != 0) {
-				cv::cvtColor(human_color, human_gray, CV_RGB2GRAY);		// 彩色轉灰階
-				cv::imwrite(human_color_image, human_color);			// 儲存彩色畫面
+				cv::cvtColor(human_color, human_gray, CV_RGB2GRAY);		// convert color image to gray image
+				cv::imwrite(human_color_image, human_color);			// Store the color image
 				absdiff(human_color_image, background_image, absdiff_color_image, absdiff_gray_image, absdiff_binary_image);
 				watershed(absdiff_color_image, watershed_segment_image);			
 			}
+			// To test: the index
+			for (int y = 0; y < g_iColorHeight; ++y) {
+				for (int x = 0; x < g_iColorWidth; ++x) {
+					int idx = 4 * (x + y * g_iColorWidth);
+					g_pTotalColor[4 * g_CaptureNum * g_uColorPointNum + idx] = human_color.data[idx];		// Red
+					g_pTotalColor[4 * g_CaptureNum * g_uColorPointNum + idx + 1] = human_color.data[idx + 1];	// Green
+					g_pTotalColor[4 * g_CaptureNum * g_uColorPointNum + idx + 2] = human_color.data[idx + 2];	// Blue
+					g_pTotalColor[4 * g_CaptureNum * g_uColorPointNum + idx + 3] = human_color.data[idx + 3];	// Alpha
+				}
+			}
 		}
+
 		pCFrame->Release();
 		pCFrame = nullptr;
 	}
 }
 
-// To test...
 void capture_human_3Dpoints() {
-	//for (int i = 0; i < 3; i++)	{
-	//	get_latest_frame();
-	//}
-	// Read color data
-	IColorFrame* pCFrame = nullptr;
-	if (g_pColorFrameReader->AcquireLatestFrame(&pCFrame) == S_OK)
-	{
-		pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, g_pColorBuffer, ColorImageFormat_Rgba);
-		pCFrame->Release();
-		pCFrame = nullptr;
-	}
 	// Read depth data
 	IDepthFrame* pDFrame = nullptr;
 	if (g_pDepthFrameReader->AcquireLatestFrame(&pDFrame) == S_OK) {
-		if ((pDFrame->CopyFrameDataToArray(g_uDepthPointNum, &g_pDepthBuffer[0])) == S_OK) {
-			// map to camera space
-			g_pCoordinateMapper->MapColorFrameToCameraSpace(g_uDepthPointNum, g_pDepthBuffer, g_uColorPointNum, g_pCSPoints);
-			for (int y = 0; y < g_iColorHeight; ++y) {
-				for (int x = 0; x < g_iColorWidth; ++x) {
-					int idx = x + y * g_iColorWidth;
-					g_totalPoints[(g_CaptureNum)* idx] = g_pCSPoints[idx];
-				}
+		pDFrame->CopyFrameDataToArray(g_uDepthPointNum, g_pDepthBuffer);
+		pDFrame->Release();
+		pDFrame = nullptr;
+		// map to camera space
+		g_pCoordinateMapper->MapColorFrameToCameraSpace(g_uDepthPointNum, g_pDepthBuffer, g_uColorPointNum, g_pCSPoints);
+		for (int y = 0; y < g_iColorHeight; ++y) {
+			for (int x = 0; x < g_iColorWidth; ++x) {
+				int idx = x + y * g_iColorWidth;
+				g_totalPoints[g_CaptureNum * g_uColorPointNum + idx].X = g_pCSPoints[idx].X;
+				g_totalPoints[g_CaptureNum * g_uColorPointNum + idx].Y = g_pCSPoints[idx].Y;
+				g_totalPoints[g_CaptureNum * g_uColorPointNum + idx].Z = g_pCSPoints[idx].Z;
 			}
-			pDFrame->Release();
-			pDFrame = nullptr;
-			g_CaptureNum++;
 		}
 	}
 }
 
-void joint_driven() {
-	// Get latest frame
-	get_latest_color_frame();
-
+void get_joint_position() {
 	IBodyFrame* pBodyFrame = nullptr;
+
 	if (g_pBodyFrameReader->AcquireLatestFrame(&pBodyFrame) == S_OK) {
 		// get Body data
-		get_latest_body_frame(pBodyFrame);
 		if (pBodyFrame->GetAndRefreshBodyData(g_iBodyCount, g_aBodyData) == S_OK) {
-			// for each body
-			IBody* pBody;
-			Joint aJoints[JointType::JointType_Count];
+			// for each body		
 			for (int i = 0; i < g_iBodyCount; ++i) {
 				pBody = g_aBodyData[i];
 				// check if is tracked
 				BOOLEAN bTracked = false;
-				// To test...
-				//for (int i = 0; i < 5; i++) {
-				//	get_latest_frame();
-				//}
 				if ((pBody->get_IsTracked(&bTracked) == S_OK) && bTracked) {
 					draw_joint_position(pBody, aJoints);
-					//cv::imshow("Body Image", g_mImg);					// show image
-
-					// Debug:print out the number of frame					
-					std::cout << "frame " << ++g_frame_count << std::endl;
-					// Update the previous 8 frame velocity
-					g_total_velocity = g_previous_velocity[0];
-					for (int j = 0; j < 7; j++) {
-						g_previous_velocity[j + 1] = g_previous_velocity[j];
-						g_total_velocity += g_previous_velocity[j + 1];
-					}
-					g_average_velocity = (float)(g_total_velocity / 8.0);
-
-					if (g_average_velocity <= 0.0015 && g_average_velocity != 0) {
-						// determine if the person is still 
-						if (g_frame_count_for_standby == 0) {
-							std::cout << "Start capturing points!" << std::endl;
-							capture_human_image();
-							capture_human_3Dpoints();
-							PlaySound(TEXT("Alarm02.wav"), NULL, SND_FILENAME);				
-						}
-						// count the number of frame whose velocity is below the threshold
-						g_frame_count_for_standby++;
-						if (g_frame_count_for_standby >= 5) {
-							g_frame_count_for_standby = 0;
-							//isCapture = false;
-						}
-					}
-					// Debug:output the average velocity 
-					average_velocityTXT << g_frame_count << " " << g_average_velocity << std::endl;
-					g_total_velocity = 0;
-					// Update the average velocity
-					int available_joints = 0;
-					for (int i = 0; i < 25; i++) {
-						// X 
-						g_positionX1[i] = g_positionX0[i];
-						g_positionX0[i] = aJoints[i].Position.X;
-						g_velocityX[i] = (g_positionX1[i] - g_positionX0[i]) * (g_positionX1[i] - g_positionX0[i]);
-						// Y
-						g_positionY1[i] = g_positionY0[i];
-						g_positionY0[i] = aJoints[i].Position.Y;
-						g_velocityY[i] = (g_positionY1[i] - g_positionY0[i]) * (g_positionY1[i] - g_positionY0[i]);
-						// Z
-						g_positionZ1[i] = g_positionZ0[i];
-						g_positionZ0[i] = aJoints[i].Position.Z;
-						g_velocityZ[i] = (g_positionZ1[i] - g_positionZ0[i]) * (g_positionZ1[i] - g_positionZ0[i]);
-						g_current_velocity[i] = sqrtf(g_velocityX[i] + g_velocityY[i] + g_velocityZ[i]);
-						// exclude the discrete velocity
-						if (g_current_velocity[i] < 0.01) {
-							g_current_total_velocity += g_current_velocity[i];
-							available_joints++;
-						}
-					}
-					// If no joint is available, save the velocity of last frame
-					if (available_joints != 0) {
-						g_current_average_velocity = g_current_total_velocity / available_joints;
-					}
-					g_previous_velocity[0] = g_current_average_velocity;
-					// Debug:output the current average velocity 
-					current_average_velocityTXT << g_frame_count << " " << g_current_average_velocity << std::endl;
-
-					g_current_total_velocity = 0;
+					//cv::imshow("Body Image", g_mImg);					// show image					
 				}
 			}
+			// Debug:print out the number of frame					
+			std::cout << "frame " << ++g_frame_count << std::endl;			
 		}
 		// release frame
 		pBodyFrame->Release();
+		pBodyFrame = nullptr;
 	}
+}
+
+void capture_human_data() {
+	// Update the average velocity
+	int available_joints = 0;
+	for (int i = 0; i < 25; i++) {
+		// X 
+		g_positionX1[i] = g_positionX0[i];
+		g_positionX0[i] = aJoints[i].Position.X;
+		g_velocityX[i] = (g_positionX1[i] - g_positionX0[i]) * (g_positionX1[i] - g_positionX0[i]);
+		// Y
+		g_positionY1[i] = g_positionY0[i];
+		g_positionY0[i] = aJoints[i].Position.Y;
+		g_velocityY[i] = (g_positionY1[i] - g_positionY0[i]) * (g_positionY1[i] - g_positionY0[i]);
+		// Z
+		g_positionZ1[i] = g_positionZ0[i];
+		g_positionZ0[i] = aJoints[i].Position.Z;
+		g_velocityZ[i] = (g_positionZ1[i] - g_positionZ0[i]) * (g_positionZ1[i] - g_positionZ0[i]);
+		g_current_velocity[i] = sqrtf(g_velocityX[i] + g_velocityY[i] + g_velocityZ[i]);
+		// exclude the discrete velocity
+		if (g_current_velocity[i] < 0.01) {
+			g_current_total_velocity += g_current_velocity[i];
+			available_joints++;
+		}
+	}
+	// If no joint is available, save the velocity of last frame
+	if (available_joints != 0) {
+		g_current_average_velocity = g_current_total_velocity / available_joints;
+	}
+	g_previous_velocity[0] = g_current_average_velocity;
+	// Debug:output the current average velocity 
+	//current_average_velocityTXT << g_frame_count << " " << g_current_average_velocity << std::endl;
+
+	// Update the previous 8 frame velocity
+	g_total_velocity = g_previous_velocity[0];
+	for (int j = 0; j < 7; j++) {
+		g_previous_velocity[j + 1] = g_previous_velocity[j];
+		g_total_velocity += g_previous_velocity[j + 1];
+	}
+	g_average_velocity = (float)(g_total_velocity / 8.0);
+
+	if (g_average_velocity <= 0.0015 && g_average_velocity != 0) {
+		// determine if the person is still 
+		if (g_frame_count_for_standby == 0) {
+			std::cout << "Start capturing point" << g_CaptureNum << std::endl;
+			capture_human_image();
+			capture_human_3Dpoints();
+			// To test: the wait time to avoid ghost
+			for (int i = 0; i < 30; i++) {
+				std::cout << "capture frame: " << ++g_frame_count << std::endl;
+			}
+			PlaySound(TEXT("Alarm02.wav"), NULL, SND_FILENAME);
+			g_CaptureNum++;
+		}
+		// count the number of frame whose velocity is below the threshold
+		g_frame_count_for_standby++;
+		if (g_frame_count_for_standby >= 100) {
+			g_frame_count_for_standby = 0;
+		}
+	}
+	// Debug:output the average velocity 
+	//average_velocityTXT << g_frame_count << " " << g_average_velocity << std::endl;
+	g_total_velocity = 0;
+
+	g_current_total_velocity = 0;	
 }
 
 void end_joint_driven() {
@@ -781,14 +675,72 @@ void end_joint_driven() {
 	g_pSensor = nullptr;
 }
 
-// To test...
-void output_asc() {	
-	for (g_CaptureNum = 0; g_CaptureNum < 8; g_CaptureNum++) {	
-		sprintf(g_watershed_segment_image, "watershed_segment%d.bmp", g_CaptureNum);		
-		sprintf(g_human_3Dpoints_asc, "human_3Dpoints%d.asc", g_CaptureNum);
-		human_mask();
-		cout << g_human_3Dpoints_asc << " has been finished!" << endl;
+void human_mask()
+{
+	// Size of input picture, the watershed segmented picture
+	const int width = g_iColorWidth;
+	const int height = g_iColorHeight;
+	const long int total_pixels = width * height;
+
+	cv::Mat img = cv::imread(g_watershed_segment_image);
+	// An one dimensional array to index whether the grayscale of each pixel is white
+	short* idx;
+	idx = new short[total_pixels];
+	memset(idx, 0, total_pixels*sizeof(short));
+	// load grayscale of each pixel in the mask
+	for (int j = 0; j < img.rows; j++) {
+		for (int i = 0; i < img.cols; i++) {
+			cv::Scalar intensity = img.at<cv::Vec3b>(j, i);
+			// when the mask is white
+			if (intensity.val[0] == 255) {
+				idx[i + j * img.cols] = 1;
+			}
+		}
 	}
+
+	// initialize the output asc file
+	std::ofstream human_3Dpoints(g_human_3Dpoints_asc);
+	std::ofstream color_human_cpt(g_color_human_3Dpoints_cpt);
+
+	// output human point cloud above the ankle segmented by bounding box
+	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
+		if (g_totalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z < X_BACK && g_totalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_totalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+			human_3Dpoints << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
+				<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
+				<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+			color_human_cpt << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
+				<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
+				<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " "
+				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+		}
+	}
+
+	// output human point cloud below the ankle segmented by Absdiff  
+	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
+		if (idx[i] == 1) {
+			if (g_totalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_totalPoints[i].Z < X_BACK && g_totalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_totalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+				human_3Dpoints << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
+					<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
+					<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+				color_human_cpt << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
+					<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
+					<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " "
+					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+			}
+		}
+	}
+
+	// release the memory of array
+	delete[] idx;
+	// close the asc file
+	human_3Dpoints.close();
+	color_human_cpt.close();
+	// release the memory of opencv matrix
+	img.release();
 }
 
 void CKinectcaptureDlg::OnBnClickedButton_Background()
@@ -804,16 +756,15 @@ void CKinectcaptureDlg::OnBnClickedButton_Background()
 			break;
 	}
 
-	// 使用openCV擷取Kinect畫面
+	// Use OpenCV to get the image from Kinect
 	cv::Mat	background_color(g_iColorHeight, g_iColorWidth, CV_8UC4);
 	cv::Mat background_gray(g_iColorHeight, g_iColorWidth, CV_8UC4);
 	char* window_name = "Background Image";
-	cv::namedWindow(window_name, 0);									// 創造彩色背景顯示視窗
+	cv::namedWindow(window_name, 0);									
 	if (pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, background_color.data, ColorImageFormat_Bgra) == S_OK)	{	
-		cv::cvtColor(background_color, background_gray, CV_RGB2GRAY);	// 彩色轉灰階
-		cv::imshow(window_name, background_color);						// 顯示彩色的背景
-		cv::imwrite("background_color.bmp", background_color);			// 輸出彩色的背景
-		//cv::imwrite("background_gray.bmp", background_gray);			// 輸出灰階的背景
+		cv::cvtColor(background_color, background_gray, CV_RGB2GRAY);	
+		cv::imshow(window_name, background_color);						
+		cv::imwrite("background_color.bmp", background_color);					
 		cv::waitKey();
 	}
 	cv::destroyWindow(window_name);
@@ -834,9 +785,10 @@ void CKinectcaptureDlg::OnBnClickedButton_Capture()
 	body_source();
 	// coordinate mapper code
 	map_coordinate();
-
+	g_CaptureNum = 0;
 	while (g_CaptureNum <= 7) {
-		joint_driven();
+		get_joint_position();
+		capture_human_data();
 	}
 	end_joint_driven();
 }
@@ -844,7 +796,13 @@ void CKinectcaptureDlg::OnBnClickedButton_Capture()
 
 void CKinectcaptureDlg::OnBnClickedButton_Output()
 {
-	output_asc();
+	for (g_CaptureNum = 0; g_CaptureNum < 8; g_CaptureNum++) {
+		sprintf(g_watershed_segment_image, "watershed_segment%d.bmp", g_CaptureNum);
+		sprintf(g_human_3Dpoints_asc, "human_3Dpoints%d.asc", g_CaptureNum);
+		sprintf(g_color_human_3Dpoints_cpt, "color_human_3Dpoints%d.txt", g_CaptureNum);
+		human_mask();
+		cout << g_human_3Dpoints_asc << " has been finished!" << endl;
+	}
 }
 
 
@@ -852,4 +810,6 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 {
 	delete[] g_totalPoints;
 	cout << "g_totalPoints has been deleted!" << endl;
+	delete[] g_pTotalColor;
+	cout << "g_pTotalColor has been deleted!" << endl;
 }
