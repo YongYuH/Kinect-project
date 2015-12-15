@@ -5,7 +5,7 @@ Goal：Build 3D color human body model with Kinect
 - Visual Studio 2013
 - MFC 4.5
 
-# Harware 
+# Hardware 
 - Kinect for Xbox One (v2)
 
 # Update Information
