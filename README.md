@@ -13,6 +13,8 @@ Goal：Build 3D color human body model with Kinect
 ###### Able to automatic sense the human motion and output the 3D point cloud file from different 8 angles
 - (.asc：x,y,z for each pixel), (.txt：x,y,z,r,g,b for each pixel), and (.bmp：human mask during the filter process)
 - the output array index(for 3D points and color information) and the user wait time need to test.
+## 2015/12/20
+###### Able to get information of the board (coordinates of corners and the equation of the plane of the board)
 
 # Capture process
 1. Click the "Background" button to get the image of background.
