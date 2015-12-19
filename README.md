@@ -1,8 +1,8 @@
 # Kinect-project
-Final goal：Build 3D color human body model with Kinect
-Current function：
-1. Extract the human 3Dpoints with color information from the raw color and depth information (Automatic detect 8 stationary views).
-2. Get the camera coordinate information from the board on the ground. (In order to get the information to do the cylindrical coodinate transform)
+- Final goal：Build 3D color human body model with Kinect
+- Current function：
+  1. Extract the human 3Dpoints with color information from the raw color and depth information (Automatic detect 8 stationary views).
+  2. Get the camera coordinate information from the board on the ground. (In order to get the information to do the cylindrical coodinate transform)
 
 ## Environment Setting
 - Visual Studio 2013
