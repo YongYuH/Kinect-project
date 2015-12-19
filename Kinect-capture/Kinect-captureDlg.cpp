@@ -110,151 +110,6 @@ char g_watershed_segment_image[30] = "watershed_segment0.bmp";
 char g_human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
 char g_color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
 
-// Debug:output the velocity of joints
-//ofstream current_average_velocityTXT("current_average_velocity.txt");
-//ofstream average_velocityTXT("average_velocity.txt");
-
-// 對 App About 使用 CAboutDlg 對話方塊
-
-class CAboutDlg : public CDialogEx
-{
-public:
-	CAboutDlg();
-
-// 對話方塊資料
-	enum { IDD = IDD_ABOUTBOX };
-
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支援
-
-// 程式碼實作
-protected:
-	DECLARE_MESSAGE_MAP()
-};
-
-CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
-{
-}
-
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
-END_MESSAGE_MAP()
-
-
-// CKinectcaptureDlg 對話方塊
-CKinectcaptureDlg::CKinectcaptureDlg(CWnd* pParent /*=NULL*/)
-	: CDialogEx(CKinectcaptureDlg::IDD, pParent)
-{
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-}
-
-void CKinectcaptureDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-}
-
-BEGIN_MESSAGE_MAP(CKinectcaptureDlg, CDialogEx)
-	ON_WM_SYSCOMMAND()
-	ON_WM_PAINT()
-	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_BUTTON1, &CKinectcaptureDlg::OnBnClickedButton_Background)
-	ON_BN_CLICKED(IDC_BUTTON2, &CKinectcaptureDlg::OnBnClickedButton_Capture)
-	ON_BN_CLICKED(IDC_BUTTON3, &CKinectcaptureDlg::OnBnClickedButton_Output)
-	ON_BN_CLICKED(IDC_BUTTON4, &CKinectcaptureDlg::OnBnClickedButton_Release)
-END_MESSAGE_MAP()
-
-
-// CKinectcaptureDlg 訊息處理常式
-
-BOOL CKinectcaptureDlg::OnInitDialog()
-{
-	CDialogEx::OnInitDialog();
-
-	// 將 [關於...] 功能表加入系統功能表。
-
-	// IDM_ABOUTBOX 必須在系統命令範圍之中。
-	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
-	ASSERT(IDM_ABOUTBOX < 0xF000);
-
-	CMenu* pSysMenu = GetSystemMenu(FALSE);
-	if (pSysMenu != NULL)
-	{
-		BOOL bNameValid;
-		CString strAboutMenu;
-		bNameValid = strAboutMenu.LoadString(IDS_ABOUTBOX);
-		ASSERT(bNameValid);
-		if (!strAboutMenu.IsEmpty())
-		{
-			pSysMenu->AppendMenu(MF_SEPARATOR);
-			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
-		}
-	}
-
-	// 設定此對話方塊的圖示。當應用程式的主視窗不是對話方塊時，
-	// 框架會自動從事此作業
-	SetIcon(m_hIcon, TRUE);			// 設定大圖示
-	SetIcon(m_hIcon, FALSE);		// 設定小圖示
-
-	// TODO:  在此加入額外的初始設定
-	AllocConsole();
-	freopen("CONOUT$", "w", stdout);
-
-	return TRUE;  // 傳回 TRUE，除非您對控制項設定焦點
-}
-
-void CKinectcaptureDlg::OnSysCommand(UINT nID, LPARAM lParam)
-{
-	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
-	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
-	}
-	else
-	{
-		CDialogEx::OnSysCommand(nID, lParam);
-	}
-}
-
-// 如果將最小化按鈕加入您的對話方塊，您需要下列的程式碼，
-// 以便繪製圖示。對於使用文件/檢視模式的 MFC 應用程式，
-// 框架會自動完成此作業。
-
-void CKinectcaptureDlg::OnPaint()
-{
-	if (IsIconic())
-	{
-		CPaintDC dc(this); // 繪製的裝置內容
-
-		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-
-		// 將圖示置中於用戶端矩形
-		int cxIcon = GetSystemMetrics(SM_CXICON);
-		int cyIcon = GetSystemMetrics(SM_CYICON);
-		CRect rect;
-		GetClientRect(&rect);
-		int x = (rect.Width() - cxIcon + 1) / 2;
-		int y = (rect.Height() - cyIcon + 1) / 2;
-
-		// 描繪圖示
-		dc.DrawIcon(x, y, m_hIcon);
-	}
-	else
-	{
-		CDialogEx::OnPaint();
-	}
-}
-
-// 當使用者拖曳最小化視窗時，
-// 系統呼叫這個功能取得游標顯示。
-HCURSOR CKinectcaptureDlg::OnQueryDragIcon()
-{
-	return static_cast<HCURSOR>(m_hIcon);
-}
-
 void default_sensor() {
 	cout << "Try to get default sensor" << endl;
 	if (GetDefaultKinectSensor(&g_pSensor) != S_OK) {
@@ -499,7 +354,7 @@ void capture_human_image() {
 
 		char* background_image = "background_color.bmp";
 
-		char human_color_image[30] = "human_color1.bmp";	
+		char human_color_image[30] = "human_color1.bmp";
 		char absdiff_color_image[30] = "absdiff_color1.bmp";
 		char absdiff_gray_image[30] = "absdiff_gray1.bmp";
 		char absdiff_binary_image[30] = "absdiff_binary1.bmp";
@@ -515,7 +370,7 @@ void capture_human_image() {
 				cv::cvtColor(human_color, human_gray, CV_RGB2GRAY);		// convert color image to gray image
 				cv::imwrite(human_color_image, human_color);			// Store the color image
 				absdiff(human_color_image, background_image, absdiff_color_image, absdiff_gray_image, absdiff_binary_image);
-				watershed(absdiff_color_image, watershed_segment_image);			
+				watershed(absdiff_color_image, watershed_segment_image);
 			}
 			// To test: the index
 			for (int y = 0; y < g_iColorHeight; ++y) {
@@ -571,7 +426,7 @@ void get_joint_position() {
 				}
 			}
 			// Debug:print out the number of frame					
-			std::cout << "frame " << ++g_frame_count << std::endl;			
+			std::cout << "frame " << ++g_frame_count << std::endl;
 		}
 		// release frame
 		pBodyFrame->Release();
@@ -621,16 +476,17 @@ void capture_human_data() {
 	if (g_average_velocity <= 0.0015 && g_average_velocity != 0) {
 		// determine if the person is still 
 		if (g_frame_count_for_standby == 0) {
-			std::cout << "Start capturing point" << g_CaptureNum << std::endl;		
+			std::cout << "Start capturing point" << g_CaptureNum << std::endl;
 			// To test: the wait time to avoid ghost
 			for (int i = 0; i < 15; i++) {
 				std::cout << "capture frame: " << ++g_frame_count << std::endl;
-			}		
+			}
 			capture_human_3Dpoints();
 			capture_human_image();
 			if (g_CaptureNum == 7) {
 				PlaySound(TEXT("clap.wav"), NULL, SND_FILENAME);
-			} else {
+			}
+			else {
 				PlaySound(TEXT("door_ring.wav"), NULL, SND_FILENAME);
 			}
 			g_CaptureNum++;
@@ -645,7 +501,7 @@ void capture_human_data() {
 	//average_velocityTXT << g_frame_count << " " << g_average_velocity << std::endl;
 	g_total_velocity = 0;
 
-	g_current_total_velocity = 0;	
+	g_current_total_velocity = 0;
 }
 
 void end_joint_driven() {
@@ -747,6 +603,181 @@ void human_mask()
 	img.release();
 }
 
+
+// Ray:global variable
+#include "Plane.h"
+
+#define ROW_SMALL (600)
+#define ROW_BIG (900)
+#define COL_SMALL (700)
+#define COL_BIG (1200)
+
+cv::Mat Imageresult;
+cv::Mat binaryimage;
+cv::Mat Image_de;
+
+void onTrackbar(int position);
+void filter();
+void Mask_center();
+void Center_filter();
+void cal_center(Point &center);
+void PlaneFit(Plane &floor);
+void bottle_filter();
+void watershed(cv::Mat &input);
+void cvFillHoles(cv::Mat &input);
+void test(cv::Mat &input, int k);
+void corner_filter(Point &center_point);
+void Find_contour(cv::Mat &input, int row_small, int row_big, int col_small, int col_big, int &k);
+
+
+
+// Debug:output the velocity of joints
+//ofstream current_average_velocityTXT("current_average_velocity.txt");
+//ofstream average_velocityTXT("average_velocity.txt");
+
+// 對 App About 使用 CAboutDlg 對話方塊
+
+class CAboutDlg : public CDialogEx
+{
+public:
+	CAboutDlg();
+
+// 對話方塊資料
+	enum { IDD = IDD_ABOUTBOX };
+
+	protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支援
+
+// 程式碼實作
+protected:
+	DECLARE_MESSAGE_MAP()
+};
+
+CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
+{
+}
+
+void CAboutDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+}
+
+BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+END_MESSAGE_MAP()
+
+
+// CKinectcaptureDlg 對話方塊
+CKinectcaptureDlg::CKinectcaptureDlg(CWnd* pParent /*=NULL*/)
+	: CDialogEx(CKinectcaptureDlg::IDD, pParent)
+{
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+}
+
+void CKinectcaptureDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+}
+
+BEGIN_MESSAGE_MAP(CKinectcaptureDlg, CDialogEx)
+	ON_WM_SYSCOMMAND()
+	ON_WM_PAINT()
+	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_BUTTON1, &CKinectcaptureDlg::OnBnClickedButton_Background)
+	ON_BN_CLICKED(IDC_BUTTON2, &CKinectcaptureDlg::OnBnClickedButton_Capture)
+	ON_BN_CLICKED(IDC_BUTTON3, &CKinectcaptureDlg::OnBnClickedButton_Output)
+	ON_BN_CLICKED(IDC_BUTTON4, &CKinectcaptureDlg::OnBnClickedButton_Release)
+	ON_BN_CLICKED(IDC_BUTTON5, &CKinectcaptureDlg::OnBnClickedButton_Coordinate)
+END_MESSAGE_MAP()
+
+
+// CKinectcaptureDlg 訊息處理常式
+
+BOOL CKinectcaptureDlg::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// 將 [關於...] 功能表加入系統功能表。
+
+	// IDM_ABOUTBOX 必須在系統命令範圍之中。
+	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
+	ASSERT(IDM_ABOUTBOX < 0xF000);
+
+	CMenu* pSysMenu = GetSystemMenu(FALSE);
+	if (pSysMenu != NULL)
+	{
+		BOOL bNameValid;
+		CString strAboutMenu;
+		bNameValid = strAboutMenu.LoadString(IDS_ABOUTBOX);
+		ASSERT(bNameValid);
+		if (!strAboutMenu.IsEmpty())
+		{
+			pSysMenu->AppendMenu(MF_SEPARATOR);
+			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
+		}
+	}
+
+	// 設定此對話方塊的圖示。當應用程式的主視窗不是對話方塊時，
+	// 框架會自動從事此作業
+	SetIcon(m_hIcon, TRUE);			// 設定大圖示
+	SetIcon(m_hIcon, FALSE);		// 設定小圖示
+
+	// TODO:  在此加入額外的初始設定
+	AllocConsole();
+	freopen("CONOUT$", "w", stdout);
+
+	return TRUE;  // 傳回 TRUE，除非您對控制項設定焦點
+}
+
+void CKinectcaptureDlg::OnSysCommand(UINT nID, LPARAM lParam)
+{
+	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
+	{
+		CAboutDlg dlgAbout;
+		dlgAbout.DoModal();
+	}
+	else
+	{
+		CDialogEx::OnSysCommand(nID, lParam);
+	}
+}
+
+// 如果將最小化按鈕加入您的對話方塊，您需要下列的程式碼，
+// 以便繪製圖示。對於使用文件/檢視模式的 MFC 應用程式，
+// 框架會自動完成此作業。
+
+void CKinectcaptureDlg::OnPaint()
+{
+	if (IsIconic())
+	{
+		CPaintDC dc(this); // 繪製的裝置內容
+
+		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
+
+		// 將圖示置中於用戶端矩形
+		int cxIcon = GetSystemMetrics(SM_CXICON);
+		int cyIcon = GetSystemMetrics(SM_CYICON);
+		CRect rect;
+		GetClientRect(&rect);
+		int x = (rect.Width() - cxIcon + 1) / 2;
+		int y = (rect.Height() - cyIcon + 1) / 2;
+
+		// 描繪圖示
+		dc.DrawIcon(x, y, m_hIcon);
+	}
+	else
+	{
+		CDialogEx::OnPaint();
+	}
+}
+
+// 當使用者拖曳最小化視窗時，
+// 系統呼叫這個功能取得游標顯示。
+HCURSOR CKinectcaptureDlg::OnQueryDragIcon()
+{
+	return static_cast<HCURSOR>(m_hIcon);
+}
+
+
 void CKinectcaptureDlg::OnBnClickedButton_Background()
 {
 	// Sensor related code
@@ -768,12 +799,14 @@ void CKinectcaptureDlg::OnBnClickedButton_Background()
 	if (pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, background_color.data, ColorImageFormat_Bgra) == S_OK)	{	
 		cv::cvtColor(background_color, background_gray, CV_RGB2GRAY);	
 		cv::imshow(window_name, background_color);						
-		cv::imwrite("background_color.bmp", background_color);					
+		cv::imwrite("background_color.bmp", background_color);	
+		cv::imwrite("background_gray.bmp", background_gray);
 		cv::waitKey();
 	}
 	cv::destroyWindow(window_name);
 	pCFrame->Release();
 	pCFrame = nullptr;
+	cout << "Finish outputting the image of the background." << endl;
 }
 
 
@@ -807,13 +840,115 @@ void CKinectcaptureDlg::OnBnClickedButton_Output()
 		human_mask();
 		cout << g_human_3Dpoints_asc << " has been finished!" << endl;
 	}
+	delete[] g_totalPoints;
+	cout << "g_totalPoints has been deleted!" << endl;
+	delete[] g_pTotalColor;
+	cout << "g_pTotalColor has been deleted!" << endl;
 }
 
 
 void CKinectcaptureDlg::OnBnClickedButton_Release()
 {
-	delete[] g_totalPoints;
-	cout << "g_totalPoints has been deleted!" << endl;
-	delete[] g_pTotalColor;
-	cout << "g_pTotalColor has been deleted!" << endl;
+	// Sensor related code
+	default_sensor();
+	// Color related code
+	color_source();
+	// Depth related code
+	depth_source();
+	// coordinate mapper code
+	map_coordinate();
+
+	IColorFrame* pCFrame = nullptr;
+	while (g_pColorFrameReader->AcquireLatestFrame(&pCFrame) != S_OK) {
+		if (g_pColorFrameReader->AcquireLatestFrame(&pCFrame) == S_OK)
+			break;
+	}
+
+	// Use OpenCV to get the image from Kinect
+	cv::Mat	background_board_color(g_iColorHeight, g_iColorWidth, CV_8UC4);
+	cv::Mat background_board_gray(g_iColorHeight, g_iColorWidth, CV_8UC4);
+	if (pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, background_board_color.data, ColorImageFormat_Bgra) == S_OK)	{
+		cv::cvtColor(background_board_color, background_board_gray, CV_RGB2GRAY);
+		cv::imwrite("background_board_gray.bmp", background_board_gray);
+	}
+	pCFrame->Release();
+	pCFrame = nullptr;
+	cout << "Finish outputting the image of the board." << endl;
+
+	// Read depth data
+	std::ofstream board_3Dpoints("board_3Dpoints.asc");
+	IDepthFrame* pDFrame = nullptr;
+	if (g_pDepthFrameReader->AcquireLatestFrame(&pDFrame) == S_OK) {
+		pDFrame->CopyFrameDataToArray(g_uDepthPointNum, g_pDepthBuffer);
+		pDFrame->Release();
+		pDFrame = nullptr;
+		// map to camera space
+		g_pCoordinateMapper->MapColorFrameToCameraSpace(g_uDepthPointNum, g_pDepthBuffer, g_uColorPointNum, g_pCSPoints);
+		cout << "Start outputting 3D point cloud of the board. Please hold on ......" << endl;
+		for (int y = 0; y < g_iColorHeight; ++y) {
+			for (int x = 0; x < g_iColorWidth; ++x) {
+				int idx = x + y * g_iColorWidth;
+				CameraSpacePoint& rPt = g_pCSPoints[idx];
+				if (rPt.Z != 0) {
+					board_3Dpoints << rPt.Z << " " << rPt.X << " " << rPt.Y  << " " << endl;
+				}
+			}
+		}
+	}
+
+	cout << "Finish outputting 3D point cloud of the board." << endl;
+
+	cv::Mat Image = cv::imread("background_board_gray.bmp", 0);		// 背景+板子
+	cv::Mat Imagebg = cv::imread("background_gray.bmp", 0);			// 背景
+	cv::subtract(Imagebg, Image, Imageresult);				// 相減
+	// Debug
+	//cv::imwrite("subtract.bmp", Imageresult);
+	threshold(Imageresult, binaryimage, 20, 255, CV_THRESH_BINARY);
+	// Debug
+	//cv::imwrite("result.bmp", binaryimage);
+	watershed(binaryimage);
+	cv::dilate(binaryimage, Image_de, cv::Mat(), cv::Point(-1, -1), 6, 1, 1);
+	cv::erode(Image_de, Image_de, cv::Mat(), cv::Point(-1, -1), 5, 1, 1);
+	// Debug
+	//imwrite("d&e.bmp", Image_de);
+	cvFillHoles(Image_de);
+	// Debug
+	//imwrite("flood.bmp", Image_de);
+	cv::Mat blurImg;
+	medianBlur(Image_de, blurImg, 3);
+
+	cv::Mat afterdil;
+	cv::dilate(blurImg, afterdil, cv::Mat(), cv::Point(-1, -1), 8, 1, 1);
+	cv::Mat Image_bound;
+	cv::subtract(afterdil, blurImg, Image_bound);
+	cv::imwrite("mask.bmp", Image_bound);
+
+	int k = 0;
+	Find_contour(blurImg, ROW_SMALL, ROW_BIG, COL_SMALL, COL_BIG, k);
+	test(blurImg, k);
+
+	cv::destroyAllWindows();
+	Image.release();
+	Imagebg.release();
+	Imageresult.release();
+	binaryimage.release();	
+	cout << "Finish outputting the mask of the board." << endl;
+}
+
+
+void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
+{
+	filter();
+	Plane floor;
+	PlaneFit(floor);
+	Point center_point;
+	corner_filter(center_point);
+
+	Point center_proj;
+	center_proj = floor.Projection(center_point);
+	cout << center_proj.x << " " << center_proj.y << " " << center_proj.z << endl;
+	std::ofstream center_only_one("center_proj.asc");
+	center_only_one << center_proj.x << " " << center_proj.y << " " << center_proj.z << " " << endl;
+	center_only_one.close();
+	cout << "Finishing output principal axis and the ground plane!" << endl;
 }
