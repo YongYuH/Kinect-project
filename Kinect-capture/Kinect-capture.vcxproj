@@ -107,6 +107,9 @@
   <ItemGroup>
     <ClInclude Include="Kinect-capture.h" />
     <ClInclude Include="Kinect-captureDlg.h" />
+    <ClInclude Include="matrix_cal.h" />
+    <ClInclude Include="Plane.h" />
+    <ClInclude Include="Point2D.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -114,6 +117,9 @@
   <ItemGroup>
     <ClCompile Include="Kinect-capture.cpp" />
     <ClCompile Include="Kinect-captureDlg.cpp" />
+    <ClCompile Include="matrix_cal.cpp" />
+    <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="practice.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

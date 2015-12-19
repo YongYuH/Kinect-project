@@ -34,4 +34,5 @@ public:
 	afx_msg void OnBnClickedButton_Capture();
 	afx_msg void OnBnClickedButton_Output();
 	afx_msg void OnBnClickedButton_Release();
+	afx_msg void OnBnClickedButton_Coordinate();
 };
