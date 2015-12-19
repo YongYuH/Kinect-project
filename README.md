@@ -16,5 +16,8 @@ Goal：Build 3D color human body model with Kinect
 
 # Capture process
 1. Click the "Background" button to get the image of background.
-2. Click the "Capture" button to start the automatic human 3D points capture process, if the user walks in front of the Kinect v2 in certain area, the program would automatically detect the stationary state of the user, and starts to capture points of 8 angles, after the information of each angle has been successfully captured, the program would play a sound effect to guide the user to turn to another angle.
-3. Click the "Output" button to start output the 3D human points (asc and txt file).
+2. Click the "Board" button to get the image and the 3D points of background with the board.
+3. Click the "Coordinate" button to get the 2D pixels and 3D points of the corners on the board 
+and get the equation of the plane of the board.
+4. Click the "Capture" button to start the automatic human 3D points capture process, if the user walks in front of the Kinect v2 in certain area, the program would automatically detect the stationary state of the user, and starts to capture points of 8 angles, after the information of each angle has been successfully captured, the program would play a sound effect to guide the user to turn to another angle.
+5. Click the "Output" button to start output the 3D human points (asc and txt file).
