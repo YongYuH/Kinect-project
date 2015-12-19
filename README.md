@@ -13,7 +13,7 @@
 ## Hardware 
 - Kinect for Xbox One (v2)
 
-## Software (In the external library folder)
+## Software (In the ExternalLib folder)
 - Kinect SDK v2.0
 - OpenCV 3.0.0
 
