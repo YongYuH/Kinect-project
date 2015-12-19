@@ -13,312 +13,312 @@ using namespace std;
 int *Sobel1D(int len, int *arr, int masklen);
 bool intersection(cv::Point2f o1, cv::Point2f p1, cv::Point2f o2, cv::Point2f p2, cv::Point2f &r);
 
-void filter()
-{
-	// Size of input picture, the watershed segmented picture
-	const int width = 1920;
-	const int height = 1080;
-	const long int total_pixels = width * height;
-
-	cv::Mat img = cv::imread("mask.bmp");
-	// An one dimensional array to index whether the grayscale of each pixel is white
-	short* idx;
-	idx = new short[total_pixels];
-	memset(idx, 0, total_pixels*sizeof(short));
-	// load grayscale of each pixel in the mask
-	for (int j = 0; j < img.rows; j++) {
-		for (int i = 0; i < img.cols; i++) {
-			cv::Scalar intensity = img.at<cv::Vec3b>(j, i);
-			// when the mask is white
-			if (intensity.val[0] == 255) {
-				idx[i + j * img.cols] = 1;
-			}
-		}
-	}
-	
-	// initialize the input asc file
-	std::fstream raw_point;
-	raw_point.open("board_3Dpoints.asc", std::ios::in);
-	
-	double* points_array;
-	points_array = new double[3 * total_pixels];
-	memset(points_array, 0, 3 * total_pixels*sizeof(double));
-
-	double* X;
-	X = new double[total_pixels];
-	memset(X, 0, total_pixels*sizeof(double));
-	int count_x = 0;
-
-	double* Y;
-	Y = new double[total_pixels];
-	memset(Y, 0, total_pixels*sizeof(double));
-	int count_y = 0;
-
-	double* Z;
-	Z = new double[total_pixels];
-	memset(Z, 0, total_pixels*sizeof(double));
-	int count_z = 0;
-
-	int pixel_height_of_ankle = 750;
-	// Save the (x, y, z) points into three arrays
-	for (long int i = 0; i < 3 * total_pixels; i++) {
-		raw_point >> points_array[i];
-		if (i % 3 == 0) {
-			X[count_x] = points_array[i];
-			count_x++;
-		}
-		if (i % 3 == 1) {
-			Y[count_y] = points_array[i];
-			count_y++;
-		}
-		if (i % 3 == 2) {
-			Z[count_z] = points_array[i];
-			count_z++;
-		}
-	}
-	// initialize the output asc file
-	std::ofstream floor_asc("floor_point.asc");
-
-	for (long int i = 0; i < total_pixels; i++) {
-		if (idx[i] == 1) {
-			if (X[i] > -3700 && X[i] != 0 && X[i] < -2000 && Y[i] < 800 && Y[i] > -800 && Z[i] > -950)
-			{
-				floor_asc << X[i] << " " << Y[i] << " " << Z[i] << " " << endl;
-			}
-		}
-	}
-
-	// release the memory of array
-	delete[] idx;
-	delete[] points_array;
-	delete[] X;
-	delete[] Y;
-	delete[] Z;
-	// close the asc file
-	raw_point.close();
-	floor_asc.close();
-	img.release();
-}
-
-void corner_filter(Point &center_point)
-{
-	// Size of input picture, the watershed segmented picture
-	const int width = 1920;
-	const int height = 1080;
-	const long int total_pixels = width * height;
-
-	cv::Mat img1 = cv::imread("four_point_mask34.bmp");
-	cv::Mat img2 = cv::imread("four_point_mask12.bmp");
-	cv::Mat img3 = cv::imread("four_point_mask23.bmp");
-	cv::Mat img4 = cv::imread("four_point_mask14.bmp");
-	// An one dimensional array to index whether the grayscale of each pixel is white
-	short *idx1, *idx2, *idx3, *idx4;
-	idx1 = new short[total_pixels];
-	idx2 = new short[total_pixels];
-	idx3 = new short[total_pixels];
-	idx4 = new short[total_pixels];
-	memset(idx1, 0, total_pixels*sizeof(short));
-	memset(idx2, 0, total_pixels*sizeof(short));
-	memset(idx3, 0, total_pixels*sizeof(short));
-	memset(idx4, 0, total_pixels*sizeof(short));
-	// load grayscale of each pixel in the mask
-	for (int j = 0; j < img1.rows; j++) {
-		for (int i = 0; i < img1.cols; i++) {
-			cv::Scalar intensity = img1.at<cv::Vec3b>(j, i);
-			// when the mask is white
-			if (intensity.val[0] == 255) {
-				idx1[i + j * img1.cols] = 1;
-			}
-		}
-	}
-	for (int j = 0; j < img2.rows; j++) {
-		for (int i = 0; i < img2.cols; i++) {
-			cv::Scalar intensity = img2.at<cv::Vec3b>(j, i);
-			// when the mask is white
-			if (intensity.val[0] == 255) {
-				idx2[i + j * img2.cols] = 1;
-			}
-		}
-	}
-	for (int j = 0; j < img3.rows; j++) {
-		for (int i = 0; i < img3.cols; i++) {
-			cv::Scalar intensity = img3.at<cv::Vec3b>(j, i);
-			// when the mask is white
-			if (intensity.val[0] == 255) {
-				idx3[i + j * img3.cols] = 1;
-			}
-		}
-	}
-	for (int j = 0; j < img4.rows; j++) {
-		for (int i = 0; i < img4.cols; i++) {
-			cv::Scalar intensity = img4.at<cv::Vec3b>(j, i);
-			// when the mask is white
-			if (intensity.val[0] == 255) {
-				idx4[i + j * img4.cols] = 1;
-			}
-		}
-	}
-
-	// initialize the input asc file
-	std::fstream raw_point;
-	raw_point.open("board_3Dpoints.asc", std::ios::in);
-
-	double* points_array;
-	points_array = new double[3 * total_pixels];
-	memset(points_array, 0, 3 * total_pixels*sizeof(double));
-
-	double* X;
-	X = new double[total_pixels];
-	memset(X, 0, total_pixels*sizeof(double));
-	int count_x = 0;
-
-	double* Y;
-	Y = new double[total_pixels];
-	memset(Y, 0, total_pixels*sizeof(double));
-	int count_y = 0;
-
-	double* Z;
-	Z = new double[total_pixels];
-	memset(Z, 0, total_pixels*sizeof(double));
-	int count_z = 0;
-
-	// Save the (x, y, z) points into three arrays
-	for (long int i = 0; i < 3 * total_pixels; i++) {
-		raw_point >> points_array[i];
-		if (i % 3 == 0) {
-			X[count_x] = points_array[i];
-			count_x++;
-		}
-		if (i % 3 == 1) {
-			Y[count_y] = points_array[i];
-			count_y++;
-		}
-		if (i % 3 == 2) {
-			Z[count_z] = points_array[i];
-			count_z++;
-		}
-	}
-
-	// initialize the output asc file
-	std::ofstream corner_asc("corner_point.asc");
-	
-	vector<double> x_corner;
-	vector<double> y_corner;
-	vector<double> z_corner;
-	double x_sum1 = 0; double x_sum2 = 0; double x_sum3 = 0; double x_sum4 = 0;
-	double y_sum1 = 0; double y_sum2 = 0; double y_sum3 = 0; double y_sum4 = 0;
-	double z_sum1 = 0; double z_sum2 = 0; double z_sum3 = 0; double z_sum4 = 0;
-	for (long int i = 0; i < total_pixels; i++) {
-		if (idx1[i] == 1) {
-			{
-				x_corner.push_back(X[i]);
-				y_corner.push_back(Y[i]);
-				z_corner.push_back(Z[i]);
-			}
-		}
-	}
-	for (int i = 0; i < x_corner.size(); i++){
-		x_sum1 += x_corner[i];
-		y_sum1 += y_corner[i];
-		z_sum1 += z_corner[i];
-	}
-	x_sum1 /= x_corner.size();
-	y_sum1 /= y_corner.size();
-	z_sum1 /= z_corner.size();
-	
-	x_corner.clear();
-	y_corner.clear();
-	z_corner.clear();
-	for (long int i = 0; i < total_pixels; i++) {
-		if (idx2[i] == 1) {
-			{
-				x_corner.push_back(X[i]);
-				y_corner.push_back(Y[i]);
-				z_corner.push_back(Z[i]);
-			}
-		}
-	}
-	for (int i = 0; i < x_corner.size(); i++){
-		x_sum2 += x_corner[i];
-		y_sum2 += y_corner[i];
-		z_sum2 += z_corner[i];
-	}
-	x_sum2 /= x_corner.size();
-	y_sum2 /= y_corner.size();
-	z_sum2 /= z_corner.size();
-	
-	x_corner.clear();
-	y_corner.clear();
-	z_corner.clear();
-	for (long int i = 0; i < total_pixels; i++) {
-		if (idx3[i] == 1) {
-			{
-				x_corner.push_back(X[i]);
-				y_corner.push_back(Y[i]);
-				z_corner.push_back(Z[i]);
-			}
-		}
-	}
-	for (int i = 0; i < x_corner.size(); i++){
-		x_sum3 += x_corner[i];
-		y_sum3 += y_corner[i];
-		z_sum3 += z_corner[i];
-	}
-	x_sum3 /= x_corner.size();
-	y_sum3 /= y_corner.size();
-	z_sum3 /= z_corner.size();
-	
-	x_corner.clear();
-	y_corner.clear();
-	z_corner.clear();
-	for (long int i = 0; i < total_pixels; i++) {
-		if (idx4[i] == 1) {
-			{
-				x_corner.push_back(X[i]);
-				y_corner.push_back(Y[i]);
-				z_corner.push_back(Z[i]);
-			}
-		}
-	}
-	for (int i = 0; i < x_corner.size(); i++){
-		x_sum4 += x_corner[i];
-		y_sum4 += y_corner[i];
-		z_sum4 += z_corner[i];
-	}
-	x_sum4 /= x_corner.size();
-	y_sum4 /= y_corner.size();
-	z_sum4 /= z_corner.size();
-	
-	corner_asc << x_sum1 << " " << y_sum1 << " " << z_sum1 << endl;
-	corner_asc << x_sum2 << " " << y_sum2 << " " << z_sum2 << endl;
-	corner_asc << x_sum3 << " " << y_sum3 << " " << z_sum3 << endl;
-	corner_asc << x_sum4 << " " << y_sum4 << " " << z_sum4 << endl;
-	corner_asc << (x_sum1 + x_sum2 + x_sum3+x_sum4)/4 << " " <<
-		(y_sum1 + y_sum2 + y_sum3 + y_sum4) / 4 << " " << 
-		(z_sum1 + z_sum2 + z_sum3 + z_sum4) / 4 << endl;
-	
-	center_point.x = (x_sum1 + x_sum2 + x_sum3 + x_sum4) / 4;
-	center_point.y = (y_sum1 + y_sum2 + y_sum3 + y_sum4) / 4;
-	center_point.z = (z_sum1 + z_sum2 + z_sum3 + z_sum4) / 4;
-
-	// release the memory of array
-	delete[] idx1;
-	delete[] idx2;
-	delete[] idx3;
-	delete[] idx4;
-	delete[] points_array;
-	delete[] X;
-	delete[] Y;
-	delete[] Z;
-	// close the asc file
-	raw_point.close();
-	corner_asc.close();
-	img1.release();
-	img2.release();
-	img3.release();
-	img4.release();
-
-}
+//void filter()
+//{
+//	// Size of input picture, the watershed segmented picture
+//	const int width = 1920;
+//	const int height = 1080;
+//	const long int total_pixels = width * height;
+//
+//	cv::Mat img = cv::imread("mask.bmp");
+//	// An one dimensional array to index whether the grayscale of each pixel is white
+//	short* idx;
+//	idx = new short[total_pixels];
+//	memset(idx, 0, total_pixels*sizeof(short));
+//	// load grayscale of each pixel in the mask
+//	for (int j = 0; j < img.rows; j++) {
+//		for (int i = 0; i < img.cols; i++) {
+//			cv::Scalar intensity = img.at<cv::Vec3b>(j, i);
+//			// when the mask is white
+//			if (intensity.val[0] == 255) {
+//				idx[i + j * img.cols] = 1;
+//			}
+//		}
+//	}
+//	
+//	// initialize the input asc file
+//	std::fstream raw_point;
+//	raw_point.open("board_3Dpoints.asc", std::ios::in);
+//	
+//	double* points_array;
+//	points_array = new double[3 * total_pixels];
+//	memset(points_array, 0, 3 * total_pixels*sizeof(double));
+//
+//	double* X;
+//	X = new double[total_pixels];
+//	memset(X, 0, total_pixels*sizeof(double));
+//	int count_x = 0;
+//
+//	double* Y;
+//	Y = new double[total_pixels];
+//	memset(Y, 0, total_pixels*sizeof(double));
+//	int count_y = 0;
+//
+//	double* Z;
+//	Z = new double[total_pixels];
+//	memset(Z, 0, total_pixels*sizeof(double));
+//	int count_z = 0;
+//
+//	int pixel_height_of_ankle = 750;
+//	// Save the (x, y, z) points into three arrays
+//	for (long int i = 0; i < 3 * total_pixels; i++) {
+//		raw_point >> points_array[i];
+//		if (i % 3 == 0) {
+//			X[count_x] = points_array[i];
+//			count_x++;
+//		}
+//		if (i % 3 == 1) {
+//			Y[count_y] = points_array[i];
+//			count_y++;
+//		}
+//		if (i % 3 == 2) {
+//			Z[count_z] = points_array[i];
+//			count_z++;
+//		}
+//	}
+//	// initialize the output asc file
+//	std::ofstream floor_asc("floor_point.asc");
+//
+//	for (long int i = 0; i < total_pixels; i++) {
+//		if (idx[i] == 1) {
+//			if (X[i] > -3700 && X[i] != 0 && X[i] < -2000 && Y[i] < 800 && Y[i] > -800 && Z[i] > -950)
+//			{
+//				floor_asc << X[i] << " " << Y[i] << " " << Z[i] << " " << endl;
+//			}
+//		}
+//	}
+//
+//	// release the memory of array
+//	delete[] idx;
+//	delete[] points_array;
+//	delete[] X;
+//	delete[] Y;
+//	delete[] Z;
+//	// close the asc file
+//	raw_point.close();
+//	floor_asc.close();
+//	img.release();
+//}
+//
+//void corner_filter(Point &center_point)
+//{
+//	// Size of input picture, the watershed segmented picture
+//	const int width = 1920;
+//	const int height = 1080;
+//	const long int total_pixels = width * height;
+//
+//	cv::Mat img1 = cv::imread("four_point_mask34.bmp");
+//	cv::Mat img2 = cv::imread("four_point_mask12.bmp");
+//	cv::Mat img3 = cv::imread("four_point_mask23.bmp");
+//	cv::Mat img4 = cv::imread("four_point_mask14.bmp");
+//	// An one dimensional array to index whether the grayscale of each pixel is white
+//	short *idx1, *idx2, *idx3, *idx4;
+//	idx1 = new short[total_pixels];
+//	idx2 = new short[total_pixels];
+//	idx3 = new short[total_pixels];
+//	idx4 = new short[total_pixels];
+//	memset(idx1, 0, total_pixels*sizeof(short));
+//	memset(idx2, 0, total_pixels*sizeof(short));
+//	memset(idx3, 0, total_pixels*sizeof(short));
+//	memset(idx4, 0, total_pixels*sizeof(short));
+//	// load grayscale of each pixel in the mask
+//	for (int j = 0; j < img1.rows; j++) {
+//		for (int i = 0; i < img1.cols; i++) {
+//			cv::Scalar intensity = img1.at<cv::Vec3b>(j, i);
+//			// when the mask is white
+//			if (intensity.val[0] == 255) {
+//				idx1[i + j * img1.cols] = 1;
+//			}
+//		}
+//	}
+//	for (int j = 0; j < img2.rows; j++) {
+//		for (int i = 0; i < img2.cols; i++) {
+//			cv::Scalar intensity = img2.at<cv::Vec3b>(j, i);
+//			// when the mask is white
+//			if (intensity.val[0] == 255) {
+//				idx2[i + j * img2.cols] = 1;
+//			}
+//		}
+//	}
+//	for (int j = 0; j < img3.rows; j++) {
+//		for (int i = 0; i < img3.cols; i++) {
+//			cv::Scalar intensity = img3.at<cv::Vec3b>(j, i);
+//			// when the mask is white
+//			if (intensity.val[0] == 255) {
+//				idx3[i + j * img3.cols] = 1;
+//			}
+//		}
+//	}
+//	for (int j = 0; j < img4.rows; j++) {
+//		for (int i = 0; i < img4.cols; i++) {
+//			cv::Scalar intensity = img4.at<cv::Vec3b>(j, i);
+//			// when the mask is white
+//			if (intensity.val[0] == 255) {
+//				idx4[i + j * img4.cols] = 1;
+//			}
+//		}
+//	}
+//
+//	// initialize the input asc file
+//	std::fstream raw_point;
+//	raw_point.open("board_3Dpoints.asc", std::ios::in);
+//
+//	double* points_array;
+//	points_array = new double[3 * total_pixels];
+//	memset(points_array, 0, 3 * total_pixels*sizeof(double));
+//
+//	double* X;
+//	X = new double[total_pixels];
+//	memset(X, 0, total_pixels*sizeof(double));
+//	int count_x = 0;
+//
+//	double* Y;
+//	Y = new double[total_pixels];
+//	memset(Y, 0, total_pixels*sizeof(double));
+//	int count_y = 0;
+//
+//	double* Z;
+//	Z = new double[total_pixels];
+//	memset(Z, 0, total_pixels*sizeof(double));
+//	int count_z = 0;
+//
+//	// Save the (x, y, z) points into three arrays
+//	for (long int i = 0; i < 3 * total_pixels; i++) {
+//		raw_point >> points_array[i];
+//		if (i % 3 == 0) {
+//			X[count_x] = points_array[i];
+//			count_x++;
+//		}
+//		if (i % 3 == 1) {
+//			Y[count_y] = points_array[i];
+//			count_y++;
+//		}
+//		if (i % 3 == 2) {
+//			Z[count_z] = points_array[i];
+//			count_z++;
+//		}
+//	}
+//
+//	// initialize the output asc file
+//	std::ofstream corner_asc("corner_point.asc");
+//	
+//	vector<double> x_corner;
+//	vector<double> y_corner;
+//	vector<double> z_corner;
+//	double x_sum1 = 0; double x_sum2 = 0; double x_sum3 = 0; double x_sum4 = 0;
+//	double y_sum1 = 0; double y_sum2 = 0; double y_sum3 = 0; double y_sum4 = 0;
+//	double z_sum1 = 0; double z_sum2 = 0; double z_sum3 = 0; double z_sum4 = 0;
+//	for (long int i = 0; i < total_pixels; i++) {
+//		if (idx1[i] == 1) {
+//			{
+//				x_corner.push_back(X[i]);
+//				y_corner.push_back(Y[i]);
+//				z_corner.push_back(Z[i]);
+//			}
+//		}
+//	}
+//	for (int i = 0; i < x_corner.size(); i++){
+//		x_sum1 += x_corner[i];
+//		y_sum1 += y_corner[i];
+//		z_sum1 += z_corner[i];
+//	}
+//	x_sum1 /= x_corner.size();
+//	y_sum1 /= y_corner.size();
+//	z_sum1 /= z_corner.size();
+//	
+//	x_corner.clear();
+//	y_corner.clear();
+//	z_corner.clear();
+//	for (long int i = 0; i < total_pixels; i++) {
+//		if (idx2[i] == 1) {
+//			{
+//				x_corner.push_back(X[i]);
+//				y_corner.push_back(Y[i]);
+//				z_corner.push_back(Z[i]);
+//			}
+//		}
+//	}
+//	for (int i = 0; i < x_corner.size(); i++){
+//		x_sum2 += x_corner[i];
+//		y_sum2 += y_corner[i];
+//		z_sum2 += z_corner[i];
+//	}
+//	x_sum2 /= x_corner.size();
+//	y_sum2 /= y_corner.size();
+//	z_sum2 /= z_corner.size();
+//	
+//	x_corner.clear();
+//	y_corner.clear();
+//	z_corner.clear();
+//	for (long int i = 0; i < total_pixels; i++) {
+//		if (idx3[i] == 1) {
+//			{
+//				x_corner.push_back(X[i]);
+//				y_corner.push_back(Y[i]);
+//				z_corner.push_back(Z[i]);
+//			}
+//		}
+//	}
+//	for (int i = 0; i < x_corner.size(); i++){
+//		x_sum3 += x_corner[i];
+//		y_sum3 += y_corner[i];
+//		z_sum3 += z_corner[i];
+//	}
+//	x_sum3 /= x_corner.size();
+//	y_sum3 /= y_corner.size();
+//	z_sum3 /= z_corner.size();
+//	
+//	x_corner.clear();
+//	y_corner.clear();
+//	z_corner.clear();
+//	for (long int i = 0; i < total_pixels; i++) {
+//		if (idx4[i] == 1) {
+//			{
+//				x_corner.push_back(X[i]);
+//				y_corner.push_back(Y[i]);
+//				z_corner.push_back(Z[i]);
+//			}
+//		}
+//	}
+//	for (int i = 0; i < x_corner.size(); i++){
+//		x_sum4 += x_corner[i];
+//		y_sum4 += y_corner[i];
+//		z_sum4 += z_corner[i];
+//	}
+//	x_sum4 /= x_corner.size();
+//	y_sum4 /= y_corner.size();
+//	z_sum4 /= z_corner.size();
+//	
+//	corner_asc << x_sum1 << " " << y_sum1 << " " << z_sum1 << endl;
+//	corner_asc << x_sum2 << " " << y_sum2 << " " << z_sum2 << endl;
+//	corner_asc << x_sum3 << " " << y_sum3 << " " << z_sum3 << endl;
+//	corner_asc << x_sum4 << " " << y_sum4 << " " << z_sum4 << endl;
+//	corner_asc << (x_sum1 + x_sum2 + x_sum3+x_sum4)/4 << " " <<
+//		(y_sum1 + y_sum2 + y_sum3 + y_sum4) / 4 << " " << 
+//		(z_sum1 + z_sum2 + z_sum3 + z_sum4) / 4 << endl;
+//	
+//	center_point.x = (x_sum1 + x_sum2 + x_sum3 + x_sum4) / 4;
+//	center_point.y = (y_sum1 + y_sum2 + y_sum3 + y_sum4) / 4;
+//	center_point.z = (z_sum1 + z_sum2 + z_sum3 + z_sum4) / 4;
+//
+//	// release the memory of array
+//	delete[] idx1;
+//	delete[] idx2;
+//	delete[] idx3;
+//	delete[] idx4;
+//	delete[] points_array;
+//	delete[] X;
+//	delete[] Y;
+//	delete[] Z;
+//	// close the asc file
+//	raw_point.close();
+//	corner_asc.close();
+//	img1.release();
+//	img2.release();
+//	img3.release();
+//	img4.release();
+//
+//}
 
 void cvFillHoles(cv::Mat &input)
 {
@@ -396,9 +396,11 @@ void test(cv::Mat &input,int k)
 			}
 		}
 	}
+	// Debug
 	//cout << white.size()<<endl;
 	int avgx = int(sumx / white.size());
 	int avgy = int(sumy / white.size());
+	// Debug
 	//cout << avgx << " " << avgy << endl;
 	for (int j = 0; j < white.size(); j++)
 	{
@@ -421,6 +423,7 @@ void test(cv::Mat &input,int k)
 		white3x[i] = white[i%white.size()];
 	}
 	int Xf, Xb, Yf, Yb,Xsum,Ysum,large;
+	int max_bv = 0;
 	int *bending_value = new int[white.size()];
 	int *bending_value3x = new int[3*white.size()];
 	for (int i = white.size(); i < 2 * white.size(); i++)
@@ -441,21 +444,26 @@ void test(cv::Mat &input,int k)
 		}
 
 		bending_value[i - white.size()] = large;
+		if (large > max_bv){ max_bv = large; }
 	}
 	int *sobel,*sobel2;
 	sobel=Sobel1D(white.size(), bending_value, 9);
 	sobel2 = Sobel1D(white.size(), sobel, 9);
-	/*ofstream bv("bv.txt");
-	ofstream bvs("bvs.txt");
-	ofstream bvs2("bvs2.txt");
-	ofstream all("all.txt");
-	for (int i = 0; i < white.size(); i++){
-			bv << bending_value[i] << endl;
-			bvs << sobel[i] << endl;
-			bvs2 << sobel2[i] << endl;
-			all << setw(4) << i << setw(3) << bending_value[i]
-				<< setw(4) << sobel[i] << setw(5) << sobel2[i] << endl;
-		}*/
+
+	// Debug
+	//ofstream bv("bv.txt");
+	//ofstream bvs("bvs.txt");
+	//ofstream bvs2("bvs2.txt");
+	//ofstream all("all.txt");
+	//cout << k << endl;
+	//for (int i = 0; i < white.size(); i++) {
+	//		bv << bending_value[i] << endl;
+	//		bvs << sobel[i] << endl;
+	//		bvs2 << sobel2[i] << endl;
+	//		all << setw(4) << i << setw(3) << bending_value[i]
+	//			<< setw(4) << sobel[i] << setw(5) << sobel2[i] << endl;
+	//}
+
 	int mark[4];
 	int count = 0;
 	vector<int> below_thres;
@@ -465,32 +473,34 @@ void test(cv::Mat &input,int k)
 	vector<int> section4;
 	
 	for (int i = 0; i < white.size(); i++){
-		if (bending_value[i] < k*0.45)
+		if (bending_value[i] < max_bv*0.5)
 			below_thres.push_back(i);
 	}
 
 	for (int i = 0; i < below_thres.size()-1; i++){
 		if ((below_thres[i + 1] - below_thres[i])!=1){
-			mark[count]=i+1;
+			mark[count]=i;
 			count++;
 		}
 	}
 
 	for (int i = 0; i < below_thres.size(); i++){
-		if ((i >= mark[0]) && (i <= mark[1] - 1))
-			section1.push_back(below_thres[i]);
-		if ((i >= mark[1]) && (i <= mark[2] - 1))
+		
+		if ((i >= mark[0]+1) && (i < mark[1]))
 			section2.push_back(below_thres[i]);
-		if ((i >= mark[2]) && (i <= mark[3] - 1))
+		else if ((i >= mark[1]) && (i < mark[2] ))
 			section3.push_back(below_thres[i]);
-		if ((i >= mark[3]) || (i <mark[0]))
+		else if ((i >= mark[2]) && (i < mark[3]))
 			section4.push_back(below_thres[i]);
+		else
+			section1.push_back(below_thres[i]);
 	}
 
-	/*ofstream sec1("sec.txt");
-	for (int i = 0; i < section1.size(); i++)
-		sec1 << section1[i] << endl;
-	cout << section1.size() + section2.size() + section3.size() + section4.size() << endl;*/
+	// Debug
+	//ofstream sec1("sec.txt");
+	//for (int i = 0; i < below_thres.size(); i++)
+	//	sec1 << below_thres[i] << endl;
+	//cout << section1.size() + section2.size() + section3.size() + section4.size() << endl;
 	
 	std::vector<cv::Point2i> points1;
 	for (int i = 0; i < section1.size(); i++){
@@ -710,28 +720,17 @@ void PlaneFit(Plane &floor)
 	//Plane floor;
 	Point temp;
 	double x, y, z;
-	int i = 0;
-	while (floor_point >> temp.x >> temp.y >> temp.z)
-	{
-		if (i == 0)
-		{
+	while (floor_point >> temp.x >> temp.y >> temp.z) {
+		x = temp.x; y = temp.y; z = temp.z;
+		if (temp.x == x && temp.y == y && temp.z == z) {
+
+		} else {
 			floor.P_origin.push_back(temp);
 		}
-		if (i > 0)
-		{
-			if (temp.x == x&&temp.y == y&&temp.z == z)
-			{
-
-			}
-			else
-			{
-				floor.P_origin.push_back(temp);
-			}
-		}
-		x = temp.x; y = temp.y; z = temp.z;
-		i++;
 	}
+	cout << "Start fitting the plane" << endl;
 	floor.fitting();
+	cout << "Finish fitting the plane" << endl;
 	std::ofstream normal_axis("normal_axis.txt");
 	normal_axis << "ax + by + cz = d" << endl;
 	normal_axis << "coefficient of x: a, " << "coefficient of y: b, " << "coefficient of z:c , " << "constant: d" << endl;

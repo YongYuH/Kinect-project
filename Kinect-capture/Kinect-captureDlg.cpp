@@ -46,7 +46,7 @@ using namespace std;
 
 // Threshold for mask (unit:m)
 #define ANKLE_HEIGHT (750)
-#define X_BACK (3.100)
+#define X_BACK (3.300)
 #define X_FRONT (1.900)
 #define Y_LEFT (0.690)
 #define Y_RIGHT (-0.690)
@@ -73,7 +73,8 @@ UINT16*	g_pDepthBuffer = nullptr;
 BYTE*	g_pColorBuffer = nullptr;
 BYTE*   g_pTotalColor = nullptr;
 CameraSpacePoint* g_pCSPoints = nullptr;
-CameraSpacePoint* g_totalPoints = nullptr;
+CameraSpacePoint* g_pboardPoints = nullptr;
+CameraSpacePoint* g_ptotalPoints = nullptr;
 
 // global variables
 cv::Mat	g_mColorImg;
@@ -144,7 +145,8 @@ void color_source() {
 		g_uColorBufferSize = g_uColorPointNum * 4 * sizeof(BYTE);
 
 		g_pCSPoints = new CameraSpacePoint[g_uColorPointNum];
-		g_totalPoints = new CameraSpacePoint[8 * g_uColorPointNum];
+		g_pboardPoints = new CameraSpacePoint[g_uColorPointNum];
+		g_ptotalPoints = new CameraSpacePoint[8 * g_uColorPointNum];
 		g_pColorBuffer = new BYTE[4 * g_uColorPointNum];
 		g_pTotalColor = new BYTE[8 * 4 * g_uColorPointNum];
 	}
@@ -401,9 +403,9 @@ void capture_human_3Dpoints() {
 		for (int y = 0; y < g_iColorHeight; ++y) {
 			for (int x = 0; x < g_iColorWidth; ++x) {
 				int idx = x + y * g_iColorWidth;
-				g_totalPoints[g_CaptureNum * g_uColorPointNum + idx].X = g_pCSPoints[idx].X;
-				g_totalPoints[g_CaptureNum * g_uColorPointNum + idx].Y = g_pCSPoints[idx].Y;
-				g_totalPoints[g_CaptureNum * g_uColorPointNum + idx].Z = g_pCSPoints[idx].Z;
+				g_ptotalPoints[g_CaptureNum * g_uColorPointNum + idx].X = g_pCSPoints[idx].X;
+				g_ptotalPoints[g_CaptureNum * g_uColorPointNum + idx].Y = g_pCSPoints[idx].Y;
+				g_ptotalPoints[g_CaptureNum * g_uColorPointNum + idx].Z = g_pCSPoints[idx].Z;
 			}
 		}
 	}
@@ -564,13 +566,13 @@ void human_mask()
 
 	// output human point cloud above the ankle segmented by bounding box
 	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
-		if (g_totalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z < X_BACK && g_totalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_totalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
-			human_3Dpoints << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
-				<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
-				<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
-			color_human_cpt << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
-				<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
-				<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " "
+		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+			human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+			color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
 				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
 				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
 				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
@@ -580,13 +582,13 @@ void human_mask()
 	// output human point cloud below the ankle segmented by Absdiff  
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
 		if (idx[i] == 1) {
-			if (g_totalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_totalPoints[i].Z < X_BACK && g_totalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_totalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_totalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
-				human_3Dpoints << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
-					<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
-					<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
-				color_human_cpt << -g_totalPoints[g_CaptureNum * total_pixels + i].Z << " "
-					<< g_totalPoints[g_CaptureNum * total_pixels + i].X << " "
-					<< g_totalPoints[g_CaptureNum * total_pixels + i].Y << " "
+			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+				color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
 					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
 					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
 					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
@@ -617,7 +619,43 @@ cv::Mat binaryimage;
 cv::Mat Image_de;
 
 void onTrackbar(int position);
-void filter();
+void filter()
+{
+	cv::Mat img = cv::imread("mask.bmp");
+	// An one dimensional array to index whether the grayscale of each pixel is white
+	short* idx;
+	idx = new short[g_uColorPointNum];
+	memset(idx, 0, g_uColorPointNum*sizeof(short));
+	// load grayscale of each pixel in the mask
+	for (int j = 0; j < img.rows; j++) {
+		for (int i = 0; i < img.cols; i++) {
+			cv::Scalar intensity = img.at<cv::Vec3b>(j, i);
+			// when the mask is white
+			if (intensity.val[0] == 255) {
+				idx[i + j * img.cols] = 1;
+			}
+		}
+	}
+
+	// initialize the output asc file
+	std::ofstream floor_asc("floor_point.asc");
+	cout << "Starting filtering the floor points!" << endl;
+	for (long int i = 0; i < g_uColorPointNum; i++) {
+		if (idx[i] == 1) {		
+			if (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT) {
+				floor_asc << -g_pboardPoints[i].Z << " " << g_pboardPoints[i].X << " "  << g_pboardPoints[i].Y << " " << endl;
+			}
+		}
+	}
+	cout << "Finishing filtering the floor points!" << endl;
+	// release the memory of array
+	delete[] idx;
+
+	// close the asc file
+
+	floor_asc.close();
+	img.release();
+}
 void Mask_center();
 void Center_filter();
 void cal_center(Point &center);
@@ -626,10 +664,169 @@ void bottle_filter();
 void watershed(cv::Mat &input);
 void cvFillHoles(cv::Mat &input);
 void test(cv::Mat &input, int k);
-void corner_filter(Point &center_point);
+void corner_filter(Point &center_point)
+{
+	// Size of input picture, the watershed segmented picture
+	const int width = 1920;
+	const int height = 1080;
+	const long int total_pixels = width * height;
+
+	cv::Mat img1 = cv::imread("four_point_mask34.bmp");
+	cv::Mat img2 = cv::imread("four_point_mask12.bmp");
+	cv::Mat img3 = cv::imread("four_point_mask23.bmp");
+	cv::Mat img4 = cv::imread("four_point_mask14.bmp");
+	// An one dimensional array to index whether the grayscale of each pixel is white
+	short *idx1, *idx2, *idx3, *idx4;
+	idx1 = new short[total_pixels];
+	idx2 = new short[total_pixels];
+	idx3 = new short[total_pixels];
+	idx4 = new short[total_pixels];
+	memset(idx1, 0, total_pixels*sizeof(short));
+	memset(idx2, 0, total_pixels*sizeof(short));
+	memset(idx3, 0, total_pixels*sizeof(short));
+	memset(idx4, 0, total_pixels*sizeof(short));
+	// load grayscale of each pixel in the mask
+	for (int j = 0; j < img1.rows; j++) {
+		for (int i = 0; i < img1.cols; i++) {
+			cv::Scalar intensity = img1.at<cv::Vec3b>(j, i);
+			// when the mask is white
+			if (intensity.val[0] == 255) {
+				idx1[i + j * img1.cols] = 1;
+			}
+		}
+	}
+	for (int j = 0; j < img2.rows; j++) {
+		for (int i = 0; i < img2.cols; i++) {
+			cv::Scalar intensity = img2.at<cv::Vec3b>(j, i);
+			// when the mask is white
+			if (intensity.val[0] == 255) {
+				idx2[i + j * img2.cols] = 1;
+			}
+		}
+	}
+	for (int j = 0; j < img3.rows; j++) {
+		for (int i = 0; i < img3.cols; i++) {
+			cv::Scalar intensity = img3.at<cv::Vec3b>(j, i);
+			// when the mask is white
+			if (intensity.val[0] == 255) {
+				idx3[i + j * img3.cols] = 1;
+			}
+		}
+	}
+	for (int j = 0; j < img4.rows; j++) {
+		for (int i = 0; i < img4.cols; i++) {
+			cv::Scalar intensity = img4.at<cv::Vec3b>(j, i);
+			// when the mask is white
+			if (intensity.val[0] == 255) {
+				idx4[i + j * img4.cols] = 1;
+			}
+		}
+	}
+	// initialize the output asc file
+	std::ofstream corner_asc("corner_point.asc");
+
+	vector<double> x_corner;
+	vector<double> y_corner;
+	vector<double> z_corner;
+	double x_sum1 = 0; double x_sum2 = 0; double x_sum3 = 0; double x_sum4 = 0;
+	double y_sum1 = 0; double y_sum2 = 0; double y_sum3 = 0; double y_sum4 = 0;
+	double z_sum1 = 0; double z_sum2 = 0; double z_sum3 = 0; double z_sum4 = 0;
+	for (long int i = 0; i < total_pixels; i++) {
+		if (idx1[i] == 1) {
+			x_corner.push_back(g_pboardPoints[i].X);
+			y_corner.push_back(g_pboardPoints[i].Y);
+			z_corner.push_back(g_pboardPoints[i].Z);
+		}
+	}
+	for (int i = 0; i < x_corner.size(); i++){
+		x_sum1 += x_corner[i];
+		y_sum1 += y_corner[i];
+		z_sum1 += z_corner[i];
+	}
+	x_sum1 /= x_corner.size();
+	y_sum1 /= y_corner.size();
+	z_sum1 /= z_corner.size();
+
+	x_corner.clear();
+	y_corner.clear();
+	z_corner.clear();
+	for (long int i = 0; i < total_pixels; i++) {
+		if (idx2[i] == 1) {
+			x_corner.push_back(g_pboardPoints[i].X);
+			y_corner.push_back(g_pboardPoints[i].Y);
+			z_corner.push_back(g_pboardPoints[i].Z);
+		}
+	}
+	for (int i = 0; i < x_corner.size(); i++){
+		x_sum2 += x_corner[i];
+		y_sum2 += y_corner[i];
+		z_sum2 += z_corner[i];
+	}
+	x_sum2 /= x_corner.size();
+	y_sum2 /= y_corner.size();
+	z_sum2 /= z_corner.size();
+
+	x_corner.clear();
+	y_corner.clear();
+	z_corner.clear();
+	for (long int i = 0; i < total_pixels; i++) {
+		if (idx3[i] == 1) {
+			x_corner.push_back(g_pboardPoints[i].X);
+			y_corner.push_back(g_pboardPoints[i].Y);
+			z_corner.push_back(g_pboardPoints[i].Z);
+		}
+	}
+	for (int i = 0; i < x_corner.size(); i++) {
+		x_sum3 += x_corner[i];
+		y_sum3 += y_corner[i];
+		z_sum3 += z_corner[i];
+	}
+	x_sum3 /= x_corner.size();
+	y_sum3 /= y_corner.size();
+	z_sum3 /= z_corner.size();
+
+	x_corner.clear();
+	y_corner.clear();
+	z_corner.clear();
+	for (long int i = 0; i < total_pixels; i++) {
+		if (idx4[i] == 1) {
+			x_corner.push_back(g_pboardPoints[i].X);
+			y_corner.push_back(g_pboardPoints[i].Y);
+			z_corner.push_back(g_pboardPoints[i].Z);
+		}
+	}
+	for (int i = 0; i < x_corner.size(); i++){
+		x_sum4 += x_corner[i];
+		y_sum4 += y_corner[i];
+		z_sum4 += z_corner[i];
+	}
+	x_sum4 /= x_corner.size();
+	y_sum4 /= y_corner.size();
+	z_sum4 /= z_corner.size();
+
+	corner_asc << -z_sum1 << " " << x_sum1 << " " << y_sum1 << endl;
+	corner_asc << -z_sum2 << " " << x_sum2 << " " << y_sum2 << endl;
+	corner_asc << -z_sum3 << " " << x_sum3 << " " << y_sum3 << endl;
+	corner_asc << -z_sum4 << " " << x_sum4 << " " << y_sum4 << endl;
+	
+	center_point.x = -(z_sum1 + z_sum2 + z_sum3 + z_sum4) / 4;
+	center_point.y = (x_sum1 + x_sum2 + x_sum3 + x_sum4) / 4;
+	center_point.z = (y_sum1 + y_sum2 + y_sum3 + y_sum4) / 4;
+	
+	// release the memory of array
+	delete[] idx1;
+	delete[] idx2;
+	delete[] idx3;
+	delete[] idx4;
+
+	// close the asc file
+	corner_asc.close();
+	img1.release();
+	img2.release();
+	img3.release();
+	img4.release();
+}
 void Find_contour(cv::Mat &input, int row_small, int row_big, int col_small, int col_big, int &k);
-
-
 
 // Debug:output the velocity of joints
 //ofstream current_average_velocityTXT("current_average_velocity.txt");
@@ -840,8 +1037,8 @@ void CKinectcaptureDlg::OnBnClickedButton_Output()
 		human_mask();
 		cout << g_human_3Dpoints_asc << " has been finished!" << endl;
 	}
-	delete[] g_totalPoints;
-	cout << "g_totalPoints has been deleted!" << endl;
+	delete[] g_ptotalPoints;
+	cout << "g_ptotalPoints has been deleted!" << endl;
 	delete[] g_pTotalColor;
 	cout << "g_pTotalColor has been deleted!" << endl;
 }
@@ -876,7 +1073,6 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	cout << "Finish outputting the image of the board." << endl;
 
 	// Read depth data
-	std::ofstream board_3Dpoints("board_3Dpoints.asc");
 	IDepthFrame* pDFrame = nullptr;
 	if (g_pDepthFrameReader->AcquireLatestFrame(&pDFrame) == S_OK) {
 		pDFrame->CopyFrameDataToArray(g_uDepthPointNum, g_pDepthBuffer);
@@ -884,19 +1080,15 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 		pDFrame = nullptr;
 		// map to camera space
 		g_pCoordinateMapper->MapColorFrameToCameraSpace(g_uDepthPointNum, g_pDepthBuffer, g_uColorPointNum, g_pCSPoints);
-		cout << "Start outputting 3D point cloud of the board. Please hold on ......" << endl;
 		for (int y = 0; y < g_iColorHeight; ++y) {
 			for (int x = 0; x < g_iColorWidth; ++x) {
 				int idx = x + y * g_iColorWidth;
-				CameraSpacePoint& rPt = g_pCSPoints[idx];
-				if (rPt.Z != 0) {
-					board_3Dpoints << rPt.Z << " " << rPt.X << " " << rPt.Y  << " " << endl;
-				}
+				g_pboardPoints[idx].X = g_pCSPoints[idx].X;
+				g_pboardPoints[idx].Y = g_pCSPoints[idx].Y;
+				g_pboardPoints[idx].Z = g_pCSPoints[idx].Z;
 			}
 		}
 	}
-
-	cout << "Finish outputting 3D point cloud of the board." << endl;
 
 	cv::Mat Image = cv::imread("background_board_gray.bmp", 0);		// ­I´º+ªO¤l
 	cv::Mat Imagebg = cv::imread("background_gray.bmp", 0);			// ­I´º
@@ -924,9 +1116,9 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	cv::imwrite("mask.bmp", Image_bound);
 
 	int k = 0;
+	
 	Find_contour(blurImg, ROW_SMALL, ROW_BIG, COL_SMALL, COL_BIG, k);
 	test(blurImg, k);
-
 	cv::destroyAllWindows();
 	Image.release();
 	Imagebg.release();
