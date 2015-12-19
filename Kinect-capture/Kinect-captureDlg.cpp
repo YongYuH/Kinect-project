@@ -621,19 +621,23 @@ void capture_human_data() {
 	if (g_average_velocity <= 0.0015 && g_average_velocity != 0) {
 		// determine if the person is still 
 		if (g_frame_count_for_standby == 0) {
-			std::cout << "Start capturing point" << g_CaptureNum << std::endl;
-			capture_human_image();
-			capture_human_3Dpoints();
+			std::cout << "Start capturing point" << g_CaptureNum << std::endl;		
 			// To test: the wait time to avoid ghost
-			for (int i = 0; i < 30; i++) {
+			for (int i = 0; i < 15; i++) {
 				std::cout << "capture frame: " << ++g_frame_count << std::endl;
+			}		
+			capture_human_3Dpoints();
+			capture_human_image();
+			if (g_CaptureNum == 7) {
+				PlaySound(TEXT("clap.wav"), NULL, SND_FILENAME);
+			} else {
+				PlaySound(TEXT("door_ring.wav"), NULL, SND_FILENAME);
 			}
-			PlaySound(TEXT("Alarm02.wav"), NULL, SND_FILENAME);
 			g_CaptureNum++;
 		}
 		// count the number of frame whose velocity is below the threshold
 		g_frame_count_for_standby++;
-		if (g_frame_count_for_standby >= 100) {
+		if (g_frame_count_for_standby >= 5) {
 			g_frame_count_for_standby = 0;
 		}
 	}
