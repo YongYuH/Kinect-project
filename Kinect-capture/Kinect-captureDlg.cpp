@@ -76,6 +76,8 @@ CameraSpacePoint* g_pCSPoints = nullptr;
 CameraSpacePoint* g_pboardPoints = nullptr;
 CameraSpacePoint* g_ptotalPoints = nullptr;
 
+cv::Mat	g_display(g_iColorHeight, g_iColorWidth, CV_8UC4);
+
 // global variables
 cv::Mat	g_mColorImg;
 cv::Mat	g_mImg = cv::Mat(g_iColorHeight, g_iColorWidth, CV_8UC4);
@@ -386,6 +388,8 @@ void capture_human_image() {
 			}
 		}
 
+		g_display = human_color.clone();
+
 		pCFrame->Release();
 		pCFrame = nullptr;
 	}
@@ -610,7 +614,7 @@ void human_mask()
 #include "Plane.h"
 
 #define ROW_SMALL (600)
-#define ROW_BIG (900)
+#define ROW_BIG (1000)
 #define COL_SMALL (700)
 #define COL_BIG (1200)
 
@@ -1023,6 +1027,14 @@ void CKinectcaptureDlg::OnBnClickedButton_Capture()
 	while (g_CaptureNum <= 7) {
 		get_joint_position();
 		capture_human_data();
+		if (g_display.data) {
+			cv::namedWindow("Current condition", 0);
+			cv::imshow("Current condition", g_display);
+			// 4c. check keyboard input
+			if (cv::waitKey(30) == VK_ESCAPE) {
+				break;
+			}
+		}
 	}
 	end_joint_driven();
 }
@@ -1118,6 +1130,9 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	int k = 0;
 	
 	Find_contour(blurImg, ROW_SMALL, ROW_BIG, COL_SMALL, COL_BIG, k);
+	// Debug
+	//cv::imshow("test", blurImg);
+	//cv::waitKey(0);
 	test(blurImg, k);
 	cv::destroyAllWindows();
 	Image.release();

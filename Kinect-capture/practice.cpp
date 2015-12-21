@@ -382,12 +382,9 @@ void test(cv::Mat &input,int k)
 	cv::Point2i temp2;
 	int sumx = 0;
 	int sumy = 0;
-	for (int i = 0; i < tmp.rows; i++)
-	{
-		for (int j = 0; j < tmp.cols; j++)
-		{
-			if ((tmp.at<unsigned char>(i,j)) == 255)
-			{
+	for (int i = 0; i < tmp.rows; i++) {
+		for (int j = 0; j < tmp.cols; j++) {
+			if ((tmp.at<unsigned char>(i,j)) == 255) {
 				temp.x = j;
 				temp.y = i;
 				white.push_back(temp);
@@ -402,10 +399,8 @@ void test(cv::Mat &input,int k)
 	int avgy = int(sumy / white.size());
 	// Debug
 	//cout << avgx << " " << avgy << endl;
-	for (int j = 0; j < white.size(); j++)
-	{
-		for (int i = 0; i < white.size() - 1; i++)
-		{
+	for (int j = 0; j < white.size(); j++) {
+		for (int i = 0; i < white.size() - 1; i++) {
 			if (atan2(double((white[i].y - avgy)) , double((white[i].x - avgx))) <
 				atan2(double((white[i + 1].y - avgy)), double((white[i + 1].x - avgx))))
 			{
@@ -418,28 +413,23 @@ void test(cv::Mat &input,int k)
 	}
 	cv::Point2i *white3x = new cv::Point2i[3 * white.size()];
 	
-	for (int i = 0; i < 3*white.size(); i++)
-	{
+	for (int i = 0; i < 3*white.size(); i++) {
 		white3x[i] = white[i%white.size()];
 	}
 	int Xf, Xb, Yf, Yb,Xsum,Ysum,large;
 	int max_bv = 0;
 	int *bending_value = new int[white.size()];
 	int *bending_value3x = new int[3*white.size()];
-	for (int i = white.size(); i < 2 * white.size(); i++)
-	{
+	for (int i = white.size(); i < 2 * white.size(); i++) {
 		Xf = white3x[i + k].x - white3x[i].x;
 		Xb = white3x[i - k].x - white3x[i].x;
 		Yf = white3x[i + k].y - white3x[i].y;
 		Yb = white3x[i - k].y - white3x[i].y;
 		Xsum = abs(Xf + Xb);
 		Ysum = abs(Yf + Yb);
-		if (Xsum>Ysum)
-		{
+		if (Xsum>Ysum) {
 			large = Xsum;
-		}
-		else
-		{
+		} else {
 			large = Ysum;
 		}
 
@@ -484,8 +474,7 @@ void test(cv::Mat &input,int k)
 		}
 	}
 
-	for (int i = 0; i < below_thres.size(); i++){
-		
+	for (int i = 0; i < below_thres.size(); i++){		
 		if ((i >= mark[0]+1) && (i < mark[1]))
 			section2.push_back(below_thres[i]);
 		else if ((i >= mark[1]) && (i < mark[2] ))
@@ -503,42 +492,41 @@ void test(cv::Mat &input,int k)
 	//cout << section1.size() + section2.size() + section3.size() + section4.size() << endl;
 	
 	std::vector<cv::Point2i> points1;
-	for (int i = 0; i < section1.size(); i++){
+	for (int i = 0; i < section1.size(); i++) {
 		points1.push_back(cv::Point2i(white[section1[i]].x, white[section1[i]].y));
 	}
 	cv::Vec4f line1;
 	cv::fitLine(points1, line1, CV_DIST_L2, 0, 0.01, 0.01);
 	std::vector<cv::Point2i> points2;
-	for (int i = 0; i < section2.size(); i++){
+	for (int i = 0; i < section2.size(); i++) {
 		points2.push_back(cv::Point2i(white[section2[i]].x, white[section2[i]].y));
 	}
 	cv::Vec4f line2;
 	cv::fitLine(points2, line2, CV_DIST_L2, 0, 0.01, 0.01);
 	std::vector<cv::Point2i> points3;
-	for (int i = 0; i < section3.size(); i++){
+	for (int i = 0; i < section3.size(); i++) {
 		points3.push_back(cv::Point2i(white[section3[i]].x, white[section3[i]].y));
 	}
 	cv::Vec4f line3;
 	cv::fitLine(points3, line3, CV_DIST_L2, 0, 0.01, 0.01);
 	std::vector<cv::Point2i> points4;
-	for (int i = 0; i < section4.size(); i++){
+	for (int i = 0; i < section4.size(); i++) {
 		points4.push_back(cv::Point2i(white[section4[i]].x, white[section4[i]].y));
 	}
 	cv::Vec4f line4;
 	cv::fitLine(points4, line4, CV_DIST_L2, 0, 0.01, 0.01);
 	
 	cv::Mat fourbreakline(1080, 1920, CV_8UC3, cv::Scalar(0));
-		for (int j = 0; j < below_thres.size(); j++){
-						
-			cv::Vec3b intensity;
-				intensity.val[0] = 255;
-				intensity.val[1] = 255;
-				intensity.val[2] = 255;
-				fourbreakline.at<cv::Vec3b>(cv::Point(white[below_thres[j]].x, white[below_thres[j]].y))
-					= intensity;
-		}
-		//imwrite("444.bmp", fourbreakline);
-		cv::Mat fourline(1080, 1920, CV_8UC3, cv::Scalar(0));
+	for (int j = 0; j < below_thres.size(); j++) {					
+		cv::Vec3b intensity;
+		intensity.val[0] = 255;
+		intensity.val[1] = 255;
+		intensity.val[2] = 255;
+		fourbreakline.at<cv::Vec3b>(cv::Point(white[below_thres[j]].x, white[below_thres[j]].y))
+				= intensity;
+	}
+	//imwrite("444.bmp", fourbreakline);
+	cv::Mat fourline(1080, 1920, CV_8UC3, cv::Scalar(0));
 	for (int i = 0; i < tmp.rows; i++){
 		for (int j = 0; j < tmp.cols; j++){
 			if ((tmp.at<unsigned char>(i, j)) == 255){
