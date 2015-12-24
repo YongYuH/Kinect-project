@@ -356,7 +356,7 @@ void capture_human_image() {
 		cv::Mat	human_color(g_iColorHeight, g_iColorWidth, CV_8UC4);
 		cv::Mat human_gray(g_iColorHeight, g_iColorWidth, CV_8UC4);
 
-		char* background_image = "background_color.bmp";
+		char* background_image = "background_board_color.bmp";
 
 		char human_color_image[30] = "human_color1.bmp";
 		char absdiff_color_image[30] = "absdiff_color1.bmp";
@@ -1077,6 +1077,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	cv::Mat	background_board_color(g_iColorHeight, g_iColorWidth, CV_8UC4);
 	cv::Mat background_board_gray(g_iColorHeight, g_iColorWidth, CV_8UC4);
 	if (pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, background_board_color.data, ColorImageFormat_Bgra) == S_OK)	{
+		cv::imwrite("background_board_color.bmp", background_board_color);
 		cv::cvtColor(background_board_color, background_board_gray, CV_RGB2GRAY);
 		cv::imwrite("background_board_gray.bmp", background_board_gray);
 	}
