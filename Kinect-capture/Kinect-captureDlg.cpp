@@ -1,5 +1,5 @@
 
-// Kinect-captureDlg.cpp : ¹ê§@ÀÉ
+// Kinect-captureDlg.cpp : å¯¦ä½œæª”
 
 #include "stdafx.h"
 #include "Kinect-capture.h"
@@ -86,7 +86,7 @@ IBody* pBody;
 Joint aJoints[JointType::JointType_Count];
 
 bool g_isCapture = false;
-int g_CaptureNum = 0;					// §ì¨ú¨ìªº¤HÅé¼Æ¥Ø
+int g_CaptureNum = 0;					// æŠ“å–åˆ°çš„äººé«”æ•¸ç›®
 
 int g_frame_count = 0;
 int g_frame_count_for_standby = 0;
@@ -736,7 +736,7 @@ void corner_filter(Point &center_point)
 	double y_sum1 = 0; double y_sum2 = 0; double y_sum3 = 0; double y_sum4 = 0;
 	double z_sum1 = 0; double z_sum2 = 0; double z_sum3 = 0; double z_sum4 = 0;
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx1[i] == 1) {
+		if (idx1[i] == 1 && (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -755,7 +755,7 @@ void corner_filter(Point &center_point)
 	y_corner.clear();
 	z_corner.clear();
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx2[i] == 1) {
+		if (idx2[i] == 1&& (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -774,7 +774,7 @@ void corner_filter(Point &center_point)
 	y_corner.clear();
 	z_corner.clear();
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx3[i] == 1) {
+		if (idx3[i] == 1&& (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -793,7 +793,7 @@ void corner_filter(Point &center_point)
 	y_corner.clear();
 	z_corner.clear();
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx4[i] == 1) {
+		if (idx4[i] == 1&& (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -836,20 +836,20 @@ void Find_contour(cv::Mat &input, int row_small, int row_big, int col_small, int
 //ofstream current_average_velocityTXT("current_average_velocity.txt");
 //ofstream average_velocityTXT("average_velocity.txt");
 
-// ¹ï App About ¨Ï¥Î CAboutDlg ¹ï¸Ü¤è¶ô
+// å° App About ä½¿ç”¨ CAboutDlg å°è©±æ–¹å¡Š
 
 class CAboutDlg : public CDialogEx
 {
 public:
 	CAboutDlg();
 
-// ¹ï¸Ü¤è¶ô¸ê®Æ
+// å°è©±æ–¹å¡Šè³‡æ–™
 	enum { IDD = IDD_ABOUTBOX };
 
 	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV ¤ä´©
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æ´
 
-// µ{¦¡½X¹ê§@
+// ç¨‹å¼ç¢¼å¯¦ä½œ
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -867,7 +867,7 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// CKinectcaptureDlg ¹ï¸Ü¤è¶ô
+// CKinectcaptureDlg å°è©±æ–¹å¡Š
 CKinectcaptureDlg::CKinectcaptureDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CKinectcaptureDlg::IDD, pParent)
 {
@@ -891,15 +891,15 @@ BEGIN_MESSAGE_MAP(CKinectcaptureDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// CKinectcaptureDlg °T®§³B²z±`¦¡
+// CKinectcaptureDlg è¨Šæ¯è™•ç†å¸¸å¼
 
 BOOL CKinectcaptureDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// ±N [Ãö©ó...] ¥\¯àªí¥[¤J¨t²Î¥\¯àªí¡C
+	// å°‡ [é—œæ–¼...] åŠŸèƒ½è¡¨åŠ å…¥ç³»çµ±åŠŸèƒ½è¡¨ã€‚
 
-	// IDM_ABOUTBOX ¥²¶·¦b¨t²Î©R¥O½d³ò¤§¤¤¡C
+	// IDM_ABOUTBOX å¿…é ˆåœ¨ç³»çµ±å‘½ä»¤ç¯„åœä¹‹ä¸­ã€‚
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
 
@@ -917,16 +917,16 @@ BOOL CKinectcaptureDlg::OnInitDialog()
 		}
 	}
 
-	// ³]©w¦¹¹ï¸Ü¤è¶ôªº¹Ï¥Ü¡C·íÀ³¥Îµ{¦¡ªº¥Dµøµ¡¤£¬O¹ï¸Ü¤è¶ô®É¡A
-	// ®Ø¬[·|¦Û°Ê±q¨Æ¦¹§@·~
-	SetIcon(m_hIcon, TRUE);			// ³]©w¤j¹Ï¥Ü
-	SetIcon(m_hIcon, FALSE);		// ³]©w¤p¹Ï¥Ü
+	// è¨­å®šæ­¤å°è©±æ–¹å¡Šçš„åœ–ç¤ºã€‚ç•¶æ‡‰ç”¨ç¨‹å¼çš„ä¸»è¦–çª—ä¸æ˜¯å°è©±æ–¹å¡Šæ™‚ï¼Œ
+	// æ¡†æ¶æœƒè‡ªå‹•å¾äº‹æ­¤ä½œæ¥­
+	SetIcon(m_hIcon, TRUE);			// è¨­å®šå¤§åœ–ç¤º
+	SetIcon(m_hIcon, FALSE);		// è¨­å®šå°åœ–ç¤º
 
-	// TODO:  ¦b¦¹¥[¤JÃB¥~ªºªì©l³]©w
+	// TODO:  åœ¨æ­¤åŠ å…¥é¡å¤–çš„åˆå§‹è¨­å®š
 	AllocConsole();
 	freopen("CONOUT$", "w", stdout);
 
-	return TRUE;  // ¶Ç¦^ TRUE¡A°£«D±z¹ï±±¨î¶µ³]©wµJÂI
+	return TRUE;  // å‚³å› TRUEï¼Œé™¤éæ‚¨å°æ§åˆ¶é …è¨­å®šç„¦é»
 }
 
 void CKinectcaptureDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -942,19 +942,19 @@ void CKinectcaptureDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 }
 
-// ¦pªG±N³Ì¤p¤Æ«ö¶s¥[¤J±zªº¹ï¸Ü¤è¶ô¡A±z»İ­n¤U¦Cªºµ{¦¡½X¡A
-// ¥H«KÃ¸»s¹Ï¥Ü¡C¹ï©ó¨Ï¥Î¤å¥ó/ÀËµø¼Ò¦¡ªº MFC À³¥Îµ{¦¡¡A
-// ®Ø¬[·|¦Û°Ê§¹¦¨¦¹§@·~¡C
+// å¦‚æœå°‡æœ€å°åŒ–æŒ‰éˆ•åŠ å…¥æ‚¨çš„å°è©±æ–¹å¡Šï¼Œæ‚¨éœ€è¦ä¸‹åˆ—çš„ç¨‹å¼ç¢¼ï¼Œ
+// ä»¥ä¾¿ç¹ªè£½åœ–ç¤ºã€‚å°æ–¼ä½¿ç”¨æ–‡ä»¶/æª¢è¦–æ¨¡å¼çš„ MFC æ‡‰ç”¨ç¨‹å¼ï¼Œ
+// æ¡†æ¶æœƒè‡ªå‹•å®Œæˆæ­¤ä½œæ¥­ã€‚
 
 void CKinectcaptureDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // Ã¸»sªº¸Ë¸m¤º®e
+		CPaintDC dc(this); // ç¹ªè£½çš„è£ç½®å…§å®¹
 
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
-		// ±N¹Ï¥Ü¸m¤¤©ó¥Î¤áºİ¯x§Î
+		// å°‡åœ–ç¤ºç½®ä¸­æ–¼ç”¨æˆ¶ç«¯çŸ©å½¢
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
 		CRect rect;
@@ -962,7 +962,7 @@ void CKinectcaptureDlg::OnPaint()
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
 
-		// ´yÃ¸¹Ï¥Ü
+		// æç¹ªåœ–ç¤º
 		dc.DrawIcon(x, y, m_hIcon);
 	}
 	else
@@ -971,8 +971,8 @@ void CKinectcaptureDlg::OnPaint()
 	}
 }
 
-// ·í¨Ï¥ÎªÌ©ì¦²³Ì¤p¤Æµøµ¡®É¡A
-// ¨t²Î©I¥s³o­Ó¥\¯à¨ú±o´å¼ĞÅã¥Ü¡C
+// ç•¶ä½¿ç”¨è€…æ‹–æ›³æœ€å°åŒ–è¦–çª—æ™‚ï¼Œ
+// ç³»çµ±å‘¼å«é€™å€‹åŠŸèƒ½å–å¾—æ¸¸æ¨™é¡¯ç¤ºã€‚
 HCURSOR CKinectcaptureDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
@@ -1103,9 +1103,9 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 		}
 	}
 
-	cv::Mat Image = cv::imread("background_board_gray.bmp", 0);		// ­I´º+ªO¤l
-	cv::Mat Imagebg = cv::imread("background_gray.bmp", 0);			// ­I´º
-	cv::subtract(Imagebg, Image, Imageresult);				// ¬Û´î
+	cv::Mat Image = cv::imread("background_board_gray.bmp", 0);		// èƒŒæ™¯+æ¿å­
+	cv::Mat Imagebg = cv::imread("background_gray.bmp", 0);			// èƒŒæ™¯
+	cv::subtract(Imagebg, Image, Imageresult);				// ç›¸æ¸›
 	// Debug
 	//cv::imwrite("subtract.bmp", Imageresult);
 	threshold(Imageresult, binaryimage, 20, 255, CV_THRESH_BINARY);
