@@ -1,5 +1,5 @@
 
-// Kinect-captureDlg.cpp : ¹ê§@ÀÉ
+// Kinect-captureDlg.cpp : å¯¦ä½œæª”
 
 #include "stdafx.h"
 #include "Kinect-capture.h"
@@ -12,24 +12,20 @@
 #include <sstream>
 #include <string>
 
-/// Play the sound effect
+// Play the sound effect
 #include <Mmsystem.h>
 #pragma comment(lib,"Winmm.lib")
 
-/// Kinect for Windows SDK Header
+// Kinect for Windows SDK Header
 #include "Kinect.h"
-/// Link Kinect Library
+// Link Kinect Library
 #pragma comment( lib, "kinect20.lib" )
 
-/// OpenCV Header
+// OpenCV Header
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-
-/// Plane fit library from Robotic & Automatic Lab in NCKU mechanical engineering department 
-#include "Plane.h"
-
-/// Link OpenCV Library
+// Link OpenCV Library
 #define OPENCV300
 
 #ifdef OPENCV300
@@ -48,20 +44,20 @@
 
 using namespace std;
 
-// Threshold for human mask (unit:m)
+// Threshold for mask (unit:m)
 #define ANKLE_HEIGHT (750)
 #define X_BACK (3.300)
 #define X_FRONT (1.900)
 #define Y_LEFT (0.690)
 #define Y_RIGHT (-0.690)
 #define Z_HEIGHT (-0.950)
-/// Threshold for board mask (unit:pixel)
-#define ROW_SMALL (600)
-#define ROW_BIG (1000)
-#define COL_SMALL (700)
-#define COL_BIG (1300)
 
-/// global variables
+float X_back_human;
+float X_front_human;
+float Y_left_human;
+float Y_right_human;
+float Z_human;
+// global variables
 IKinectSensor*		g_pSensor = nullptr;
 IColorFrameReader*	g_pColorFrameReader = nullptr;
 IDepthFrameReader*	g_pDepthFrameReader = nullptr;
@@ -87,14 +83,15 @@ CameraSpacePoint* g_ptotalPoints = nullptr;
 
 cv::Mat	g_display(g_iColorHeight, g_iColorWidth, CV_8UC4);
 
-/// Larry:global variables
+// global variables
 cv::Mat	g_mColorImg;
 cv::Mat	g_mImg = cv::Mat(g_iColorHeight, g_iColorWidth, CV_8UC4);
 
 IBody* pBody;
 Joint aJoints[JointType::JointType_Count];
 
-int g_CaptureNum = 0;					// §ì¨ú¨ìªº¤HÅé¼Æ¥Ø
+bool g_isCapture = false;
+int g_CaptureNum = 0;					// æŠ“å–åˆ°çš„äººé«”æ•¸ç›®
 
 int g_frame_count = 0;
 int g_frame_count_for_standby = 0;
@@ -116,7 +113,7 @@ float g_current_average_velocity = 0.0;
 float g_total_velocity = 0.0;
 float g_average_velocity = 0.0;
 
-/// global output file name
+// global output file name
 char g_watershed_segment_image[30] = "watershed_segment0.bmp";
 char g_human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
 char g_color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
@@ -295,7 +292,7 @@ void draw_joint_position(IBody* pBody, Joint* aJoints) {
 	}
 }
 
-/// void absdiff(input background image, input human image, output absdiff color image, output absdiff gray image, output absdiff binary image)
+// void absdiff(input background image, input human image, output absdiff color image, output absdiff gray image, output absdiff binary image)
 void absdiff(char* background_color_image, char* human_color_image, char* absdiff_color_image, char* absdiff_gray_image, char* absdiff_binary_image)
 {
 	cv::Mat background_color = cv::imread(background_color_image);	// get the background image frame
@@ -318,7 +315,7 @@ void absdiff(char* background_color_image, char* human_color_image, char* absdif
 	absdiff_binary.release();
 }
 
-/// void watershed(input absdiff image, output mask image)
+// void watershed(input absdiff image, output mask image)
 void watershed(char* absdiff_color_image, char* watershed_segment_image)
 {
 	cv::Mat absdiff_color = cv::imread(absdiff_color_image);
@@ -578,21 +575,16 @@ void human_mask()
 
 	// output human point cloud above the ankle segmented by bounding box
 	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
-		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
+			human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
 			color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
-		}
-	}
-
-	for (long int i = 0; i < width * ANKLE_HEIGHT; i = i + 9) {
-		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
-				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-							   << g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-							   << g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
+				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
 		}
 	}
 
@@ -600,22 +592,15 @@ void human_mask()
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
 		if (idx[i] == 1) {
 			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
 				color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
-			}
-		}
-	}
-
-	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i = i + 9) {
-		if (idx[i] == 1) {
-			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
-				human_3Dpoints  << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
+					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
 			}
 		}
 	}
@@ -629,7 +614,15 @@ void human_mask()
 	img.release();
 }
 
-/// Ray:global variables
+
+// Ray:global variable
+#include "Plane.h"
+
+#define ROW_SMALL (600)
+#define ROW_BIG (1000)
+#define COL_SMALL (700)
+#define COL_BIG (1200)
+
 cv::Mat Imageresult;
 cv::Mat binaryimage;
 cv::Mat Image_de;
@@ -674,7 +667,7 @@ void filter()
 }
 void Mask_center();
 void Center_filter();
-void cal_center(Point &center);
+//void cal_center(Point &center);
 void PlaneFit(Plane &floor);
 void bottle_filter();
 void watershed(cv::Mat &input);
@@ -748,7 +741,7 @@ void corner_filter(Point &center_point)
 	double y_sum1 = 0; double y_sum2 = 0; double y_sum3 = 0; double y_sum4 = 0;
 	double z_sum1 = 0; double z_sum2 = 0; double z_sum3 = 0; double z_sum4 = 0;
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx1[i] == 1) {
+		if (idx1[i] == 1 && (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -767,7 +760,7 @@ void corner_filter(Point &center_point)
 	y_corner.clear();
 	z_corner.clear();
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx2[i] == 1) {
+		if (idx2[i] == 1&& (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -786,7 +779,7 @@ void corner_filter(Point &center_point)
 	y_corner.clear();
 	z_corner.clear();
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx3[i] == 1) {
+		if (idx3[i] == 1&& (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -805,7 +798,7 @@ void corner_filter(Point &center_point)
 	y_corner.clear();
 	z_corner.clear();
 	for (long int i = 0; i < total_pixels; i++) {
-		if (idx4[i] == 1) {
+		if (idx4[i] == 1&& (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT)) {
 			x_corner.push_back(g_pboardPoints[i].X);
 			y_corner.push_back(g_pboardPoints[i].Y);
 			z_corner.push_back(g_pboardPoints[i].Z);
@@ -848,20 +841,20 @@ void Find_contour(cv::Mat &input, int row_small, int row_big, int col_small, int
 //ofstream current_average_velocityTXT("current_average_velocity.txt");
 //ofstream average_velocityTXT("average_velocity.txt");
 
-// ¹ï App About ¨Ï¥Î CAboutDlg ¹ï¸Ü¤è¶ô
+// å° App About ä½¿ç”¨ CAboutDlg å°è©±æ–¹å¡Š
 
 class CAboutDlg : public CDialogEx
 {
 public:
 	CAboutDlg();
 
-// ¹ï¸Ü¤è¶ô¸ê®Æ
+// å°è©±æ–¹å¡Šè³‡æ–™
 	enum { IDD = IDD_ABOUTBOX };
 
 	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV ¤ä´©
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æ´
 
-// µ{¦¡½X¹ê§@
+// ç¨‹å¼ç¢¼å¯¦ä½œ
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -879,7 +872,7 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// CKinectcaptureDlg ¹ï¸Ü¤è¶ô
+// CKinectcaptureDlg å°è©±æ–¹å¡Š
 CKinectcaptureDlg::CKinectcaptureDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CKinectcaptureDlg::IDD, pParent)
 {
@@ -903,15 +896,15 @@ BEGIN_MESSAGE_MAP(CKinectcaptureDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// CKinectcaptureDlg °T®§³B²z±`¦¡
+// CKinectcaptureDlg è¨Šæ¯è™•ç†å¸¸å¼
 
 BOOL CKinectcaptureDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// ±N [Ãö©ó...] ¥\¯àªí¥[¤J¨t²Î¥\¯àªí¡C
+	// å°‡ [é—œæ–¼...] åŠŸèƒ½è¡¨åŠ å…¥ç³»çµ±åŠŸèƒ½è¡¨ã€‚
 
-	// IDM_ABOUTBOX ¥²¶·¦b¨t²Î©R¥O½d³ò¤§¤¤¡C
+	// IDM_ABOUTBOX å¿…é ˆåœ¨ç³»çµ±å‘½ä»¤ç¯„åœä¹‹ä¸­ã€‚
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
 
@@ -929,16 +922,16 @@ BOOL CKinectcaptureDlg::OnInitDialog()
 		}
 	}
 
-	// ³]©w¦¹¹ï¸Ü¤è¶ôªº¹Ï¥Ü¡C·íÀ³¥Îµ{¦¡ªº¥Dµøµ¡¤£¬O¹ï¸Ü¤è¶ô®É¡A
-	// ®Ø¬[·|¦Û°Ê±q¨Æ¦¹§@·~
-	SetIcon(m_hIcon, TRUE);			// ³]©w¤j¹Ï¥Ü
-	SetIcon(m_hIcon, FALSE);		// ³]©w¤p¹Ï¥Ü
+	// è¨­å®šæ­¤å°è©±æ–¹å¡Šçš„åœ–ç¤ºã€‚ç•¶æ‡‰ç”¨ç¨‹å¼çš„ä¸»è¦–çª—ä¸æ˜¯å°è©±æ–¹å¡Šæ™‚ï¼Œ
+	// æ¡†æ¶æœƒè‡ªå‹•å¾äº‹æ­¤ä½œæ¥­
+	SetIcon(m_hIcon, TRUE);			// è¨­å®šå¤§åœ–ç¤º
+	SetIcon(m_hIcon, FALSE);		// è¨­å®šå°åœ–ç¤º
 
-	// TODO:  ¦b¦¹¥[¤JÃB¥~ªºªì©l³]©w
+	// TODO:  åœ¨æ­¤åŠ å…¥é¡å¤–çš„åˆå§‹è¨­å®š
 	AllocConsole();
 	freopen("CONOUT$", "w", stdout);
 
-	return TRUE;  // ¶Ç¦^ TRUE¡A°£«D±z¹ï±±¨î¶µ³]©wµJÂI
+	return TRUE;  // å‚³å› TRUEï¼Œé™¤éæ‚¨å°æ§åˆ¶é …è¨­å®šç„¦é»
 }
 
 void CKinectcaptureDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -954,19 +947,19 @@ void CKinectcaptureDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 }
 
-// ¦pªG±N³Ì¤p¤Æ«ö¶s¥[¤J±zªº¹ï¸Ü¤è¶ô¡A±z»İ­n¤U¦Cªºµ{¦¡½X¡A
-// ¥H«KÃ¸»s¹Ï¥Ü¡C¹ï©ó¨Ï¥Î¤å¥ó/ÀËµø¼Ò¦¡ªº MFC À³¥Îµ{¦¡¡A
-// ®Ø¬[·|¦Û°Ê§¹¦¨¦¹§@·~¡C
+// å¦‚æœå°‡æœ€å°åŒ–æŒ‰éˆ•åŠ å…¥æ‚¨çš„å°è©±æ–¹å¡Šï¼Œæ‚¨éœ€è¦ä¸‹åˆ—çš„ç¨‹å¼ç¢¼ï¼Œ
+// ä»¥ä¾¿ç¹ªè£½åœ–ç¤ºã€‚å°æ–¼ä½¿ç”¨æ–‡ä»¶/æª¢è¦–æ¨¡å¼çš„ MFC æ‡‰ç”¨ç¨‹å¼ï¼Œ
+// æ¡†æ¶æœƒè‡ªå‹•å®Œæˆæ­¤ä½œæ¥­ã€‚
 
 void CKinectcaptureDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // Ã¸»sªº¸Ë¸m¤º®e
+		CPaintDC dc(this); // ç¹ªè£½çš„è£ç½®å…§å®¹
 
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
-		// ±N¹Ï¥Ü¸m¤¤©ó¥Î¤áºİ¯x§Î
+		// å°‡åœ–ç¤ºç½®ä¸­æ–¼ç”¨æˆ¶ç«¯çŸ©å½¢
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
 		CRect rect;
@@ -974,7 +967,7 @@ void CKinectcaptureDlg::OnPaint()
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
 
-		// ´yÃ¸¹Ï¥Ü
+		// æç¹ªåœ–ç¤º
 		dc.DrawIcon(x, y, m_hIcon);
 	}
 	else
@@ -983,8 +976,8 @@ void CKinectcaptureDlg::OnPaint()
 	}
 }
 
-// ·í¨Ï¥ÎªÌ©ì¦²³Ì¤p¤Æµøµ¡®É¡A
-// ¨t²Î©I¥s³o­Ó¥\¯à¨ú±o´å¼ĞÅã¥Ü¡C
+// ç•¶ä½¿ç”¨è€…æ‹–æ›³æœ€å°åŒ–è¦–çª—æ™‚ï¼Œ
+// ç³»çµ±å‘¼å«é€™å€‹åŠŸèƒ½å–å¾—æ¸¸æ¨™é¡¯ç¤ºã€‚
 HCURSOR CKinectcaptureDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
@@ -1115,9 +1108,9 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 		}
 	}
 
-	cv::Mat Image = cv::imread("background_board_gray.bmp", 0);		// ­I´º+ªO¤l
-	cv::Mat Imagebg = cv::imread("background_gray.bmp", 0);			// ­I´º
-	cv::subtract(Imagebg, Image, Imageresult);				// ¬Û´î
+	cv::Mat Image = cv::imread("background_board_gray.bmp", 0);		// èƒŒæ™¯+æ¿å­
+	cv::Mat Imagebg = cv::imread("background_gray.bmp", 0);			// èƒŒæ™¯
+	cv::subtract(Imagebg, Image, Imageresult);				// ç›¸æ¸›
 	// Debug
 	//cv::imwrite("subtract.bmp", Imageresult);
 	threshold(Imageresult, binaryimage, 20, 255, CV_THRESH_BINARY);
@@ -1144,7 +1137,8 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	
 	Find_contour(blurImg, ROW_SMALL, ROW_BIG, COL_SMALL, COL_BIG, k);
 	// Debug
-	cv::imwrite("after_find_coutour.bmp", blurImg);
+	//cv::imshow("test", blurImg);
+	//cv::waitKey(0);
 	test(blurImg, k);
 	cv::destroyAllWindows();
 	Image.release();
@@ -1169,5 +1163,17 @@ void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
 	std::ofstream center_only_one("center_proj.asc");
 	center_only_one << center_proj.x << " " << center_proj.y << " " << center_proj.z << " " << endl;
 	center_only_one.close();
+
+	////calculate bounding box for human
+	X_back_human = center_proj.x + 0.7;
+	X_front_human = center_proj.x-0.7;
+	Y_left_human = center_proj.y+0.7;
+	Y_right_human = center_proj.y - 0.7;
+	Z_human = center_proj.z-0.01;
+
+
+	/////////
+
+
 	cout << "Finishing output principal axis and the ground plane!" << endl;
 }
