@@ -616,10 +616,12 @@ void human_mask()
 	}
 
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i = i + 9) {
-		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
-			human_3Dpoints  << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+		if (idx[i] == 1) {
+			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
+				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+			}
 		}
 	}
 
