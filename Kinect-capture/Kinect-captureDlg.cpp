@@ -575,7 +575,7 @@ void human_mask()
 
 	// output human point cloud above the ankle segmented by bounding box
 	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
-		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
+		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
 			human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
 				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
 				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
@@ -591,7 +591,7 @@ void human_mask()
 	// output human point cloud below the ankle segmented by Absdiff  
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
 		if (idx[i] == 1) {
-			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
 				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
 					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
 					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
@@ -1169,7 +1169,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
 	X_front_human = center_proj.x-0.7;
 	Y_left_human = center_proj.y+0.7;
 	Y_right_human = center_proj.y - 0.7;
-	Z_human = center_proj.z-0.01;
+	Z_human = center_proj.z-0.1;
 
 
 	/////////
