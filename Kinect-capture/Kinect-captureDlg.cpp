@@ -11,6 +11,8 @@
 #include <math.h>
 #include <sstream>
 #include <string>
+// Plane fit library from Robotic & Automatic Lab in NCKU mechanical engineering department 
+#include "Plane.h"
 
 // Play the sound effect
 #include <Mmsystem.h>
@@ -25,9 +27,9 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+
 // Link OpenCV Library
 #define OPENCV300
-
 #ifdef OPENCV300
 #ifdef _DEBUG
 #pragma comment( lib, "opencv_ts300d.lib" )
@@ -44,19 +46,25 @@
 
 using namespace std;
 
-// Threshold for mask (unit:m)
+// Threshold for human mask (unit:m)
 #define ANKLE_HEIGHT (750)
 #define X_BACK (3.300)
 #define X_FRONT (1.900)
 #define Y_LEFT (0.690)
 #define Y_RIGHT (-0.690)
 #define Z_HEIGHT (-0.950)
+// Threshold for board mask (unit:pixel)
+#define ROW_SMALL (600)
+#define ROW_BIG (1000)
+#define COL_SMALL (700)
+#define COL_BIG (1300)
 
 float X_back_human;
 float X_front_human;
 float Y_left_human;
 float Y_right_human;
 float Z_human;
+
 // global variables
 IKinectSensor*		g_pSensor = nullptr;
 IColorFrameReader*	g_pColorFrameReader = nullptr;
@@ -576,15 +584,20 @@ void human_mask()
 	// output human point cloud above the ankle segmented by bounding box
 	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
 		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
-			human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
 			color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
+							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+		}
+	}
+
+	for (long int i = 0; i < width * ANKLE_HEIGHT; i = i + 9) {
+		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
+			human_3Dpoints  << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
 		}
 	}
 
@@ -592,16 +605,21 @@ void human_mask()
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
 		if (idx[i] == 1) {
 			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
-				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
 				color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
+								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
 			}
+		}
+	}
+
+	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i = i + 9) {
+		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
+			human_3Dpoints  << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
 		}
 	}
 
@@ -615,13 +633,7 @@ void human_mask()
 }
 
 
-// Ray:global variable
-#include "Plane.h"
 
-#define ROW_SMALL (600)
-#define ROW_BIG (1000)
-#define COL_SMALL (700)
-#define COL_BIG (1200)
 
 cv::Mat Imageresult;
 cv::Mat binaryimage;
