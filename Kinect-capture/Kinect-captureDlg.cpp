@@ -127,30 +127,30 @@ char g_human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
 char g_color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
 
 void default_sensor() {
-	cout << "Try to get default sensor" << endl;
+	std::cout << "Try to get default sensor" << std::endl;
 	if (GetDefaultKinectSensor(&g_pSensor) != S_OK) {
-		cerr << "Get Sensor failed" << endl;
+		std::cerr << "Get Sensor failed" << std::endl;
 		return;
 	}
 
-	cout << "Try to open sensor" << endl;
+	std::cout << "Try to open sensor" << std::endl;
 	if (g_pSensor->Open() != S_OK)	 {
-		cerr << "Can't open sensor" << endl;
+		std::cerr << "Can't open sensor" << std::endl;
 		return;
 	}
 }
 
 void color_source() {
-	cout << "Try to get color source" << endl;
+	std::cout << "Try to get color source" << std::endl;
 	// Get frame source
 	IColorFrameSource* pFrameSource = nullptr;
 	if (g_pSensor->get_ColorFrameSource(&pFrameSource) != S_OK) {
-		cerr << "Can't get color frame source" << endl;
+		std::cerr << "Can't get color frame source" << std::endl;
 		return;
 	}
 
 	// Get frame description
-	cout << "get color frame description" << endl;
+	std::cout << "get color frame description" << std::endl;
 	IFrameDescription* pFrameDescription = nullptr;
 	if (pFrameSource->get_FrameDescription(&pFrameDescription) == S_OK)	{
 		pFrameDescription->get_Width(&g_iColorWidth);
@@ -169,29 +169,29 @@ void color_source() {
 	pFrameDescription = nullptr;
 
 	// get frame reader
-	cout << "Try to get color frame reader" << endl;
+	std::cout << "Try to get color frame reader" << std::endl;
 	if (pFrameSource->OpenReader(&g_pColorFrameReader) != S_OK) {
-		cerr << "Can't get color frame reader" << endl;
+		std::cerr << "Can't get color frame reader" << std::endl;
 		return;
 	}
 
 	// release Frame source
-	cout << "Release frame source" << endl;
+	std::cout << "Release frame source" << std::endl;
 	pFrameSource->Release();
 	pFrameSource = nullptr;
 }
 
 void depth_source() {
-	cout << "Try to get depth source" << endl;
+	std::cout << "Try to get depth source" << std::endl;
 	// Get frame source
 	IDepthFrameSource* pFrameSource = nullptr;
 	if (g_pSensor->get_DepthFrameSource(&pFrameSource) != S_OK) {
-		cerr << "Can't get depth frame source" << endl;
+		std::cerr << "Can't get depth frame source" << std::endl;
 		return;
 	}
 
 	// Get frame description
-	cout << "get depth frame description" << endl;
+	std::cout << "get depth frame description" << std::endl;
 	IFrameDescription* pFrameDescription = nullptr;
 	if (pFrameSource->get_FrameDescription(&pFrameDescription) == S_OK) {
 		pFrameDescription->get_Width(&g_iDepthWidth);
@@ -203,30 +203,30 @@ void depth_source() {
 	pFrameDescription = nullptr;
 
 	// get frame reader
-	cout << "Try to get depth frame reader" << endl;
+	std::cout << "Try to get depth frame reader" << std::endl;
 	if (pFrameSource->OpenReader(&g_pDepthFrameReader) != S_OK) {
-		cerr << "Can't get depth frame reader" << endl;
+		std::cerr << "Can't get depth frame reader" << std::endl;
 		return;
 	}
 
 	// release Frame source
-	cout << "Release frame source" << endl;
+	std::cout << "Release frame source" << std::endl;
 	pFrameSource->Release();
 	pFrameSource = nullptr;
 }
 
 void body_source() {
-	cout << "Try to get body source" << endl;
+	std::cout << "Try to get body source" << std::endl;
 	// Get frame source
 	IBodyFrameSource* pFrameSource = nullptr;
 	if (g_pSensor->get_BodyFrameSource(&pFrameSource) != S_OK) {
-		cerr << "Can't get body frame source" << endl;
+		std::cerr << "Can't get body frame source" << std::endl;
 		return;
 	}
 
 	// Get the number of body
 	if (pFrameSource->get_BodyCount(&g_iBodyCount) != S_OK) {
-		cerr << "Can't get body count" << std::endl;
+		std::cerr << "Can't get body count" << std::endl;
 		return;
 	}
 	std::cout << "Can trace " << g_iBodyCount << " bodies" << std::endl;
@@ -235,14 +235,14 @@ void body_source() {
 		g_aBodyData[i] = nullptr;
 
 	// get frame reader
-	cout << "Try to get body frame reader" << endl;
+	std::cout << "Try to get body frame reader" << std::endl;
 	if (pFrameSource->OpenReader(&g_pBodyFrameReader) != S_OK) {
-		cerr << "Can't get body frame reader" << endl;
+		std::cerr << "Can't get body frame reader" << std::endl;
 		return;
 	}
 
 	// release Frame source
-	cout << "Release frame source" << endl;
+	std::cout << "Release frame source" << std::endl;
 	pFrameSource->Release();
 	pFrameSource = nullptr;
 }
@@ -662,15 +662,15 @@ void filter()
 
 	// initialize the output asc file
 	std::ofstream floor_asc("floor_point.asc");
-	cout << "Starting filtering the floor points!" << endl;
+	std::cout << "Starting filtering the floor points!" << std::endl;
 	for (long int i = 0; i < g_uColorPointNum; i++) {
 		if (idx[i] == 1) {		
 			if (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT) {
-				floor_asc << -g_pboardPoints[i].Z << " " << g_pboardPoints[i].X << " "  << g_pboardPoints[i].Y << " " << endl;
+				floor_asc << -g_pboardPoints[i].Z << " " << g_pboardPoints[i].X << " "  << g_pboardPoints[i].Y << " " << std::endl;
 			}
 		}
 	}
-	cout << "Finishing filtering the floor points!" << endl;
+	std::cout << "Finishing filtering the floor points!" << std::endl;
 	// release the memory of array
 	delete[] idx;
 
@@ -1026,7 +1026,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Background()
 	cv::destroyWindow(window_name);
 	pCFrame->Release();
 	pCFrame = nullptr;
-	cout << "Finish outputting the image of the background." << endl;
+	std::cout << "Finish outputting the image of the background." << std::endl;
 }
 
 
@@ -1066,12 +1066,12 @@ void CKinectcaptureDlg::OnBnClickedButton_Output()
 		sprintf(g_human_3Dpoints_asc, "human_3Dpoints%d.asc", g_CaptureNum);
 		sprintf(g_color_human_3Dpoints_cpt, "color_human_3Dpoints%d.txt", g_CaptureNum);
 		human_mask();
-		cout << g_human_3Dpoints_asc << " has been finished!" << endl;
+		std::cout << g_human_3Dpoints_asc << " has been finished!" << std::endl;
 	}
 	delete[] g_ptotalPoints;
-	cout << "g_ptotalPoints has been deleted!" << endl;
+	std::cout << "g_ptotalPoints has been deleted!" << std::endl;
 	delete[] g_pTotalColor;
-	cout << "g_pTotalColor has been deleted!" << endl;
+	std::cout << "g_pTotalColor has been deleted!" << std::endl;
 }
 
 
@@ -1102,7 +1102,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	}
 	pCFrame->Release();
 	pCFrame = nullptr;
-	cout << "Finish outputting the image of the board." << endl;
+	std::cout << "Finish outputting the image of the board." << std::endl;
 
 	// Read depth data
 	IDepthFrame* pDFrame = nullptr;
@@ -1177,7 +1177,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	Imagebg.release();
 	Imageresult.release();
 	binaryimage.release();	
-	cout << "Finish outputting the mask of the board." << endl;
+	std::cout << "Finish outputting the mask of the board." << std::endl;
 }
 
 
@@ -1191,21 +1191,18 @@ void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
 
 	Point center_proj;
 	center_proj = floor.Projection(center_point);
-	cout << center_proj.x << " " << center_proj.y << " " << center_proj.z << endl;
+	std::cout << center_proj.x << " " << center_proj.y << " " << center_proj.z << std::endl;
 	std::ofstream center_only_one("center_proj.asc");
 	center_only_one << center_proj.x << " " << center_proj.y << " " << center_proj.z << " " << endl;
 	center_only_one.close();
 
 	////calculate bounding box for human
 	X_back_human = center_proj.x + 0.7;
-	X_front_human = center_proj.x-0.7;
-	Y_left_human = center_proj.y+0.7;
+	X_front_human = center_proj.x - 0.7;
+	Y_left_human = center_proj.y + 0.7;
 	Y_right_human = center_proj.y - 0.7;
-	Z_human = center_proj.z-0.1;
-
-
+	Z_human = center_proj.z - 0.1;
 	/////////
 
-
-	cout << "Finishing output principal axis and the ground plane!" << endl;
+	std::cout << "Finishing output principal axis and the ground plane!" << std::endl;
 }
