@@ -7,8 +7,10 @@
     - (In order to get the information to do the cylindrical coodinate transform)
 
 ## Environment Setting
+- Windows 8
 - Visual Studio 2013
 - MFC 4.5
+
 
 ## Hardware 
 - Kinect for Xbox One (v2)
