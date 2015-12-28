@@ -708,14 +708,35 @@ void PlaneFit(Plane &floor)
 	//Plane floor;
 	Point temp;
 	double x, y, z;
-	while (floor_point >> temp.x >> temp.y >> temp.z) {
-		x = temp.x; y = temp.y; z = temp.z;
-		if (temp.x == x && temp.y == y && temp.z == z) {
-
-		} else {
+	int i = 0;
+	while (floor_point >> temp.x >> temp.y >> temp.z)
+	{
+		if (i == 0)
+		{
 			floor.P_origin.push_back(temp);
 		}
+		if (i > 0)
+		{
+			if (temp.x == x&&temp.y == y&&temp.z == z)
+			{
+
+			}
+			else
+			{
+				floor.P_origin.push_back(temp);
+			}
+		}
+		x = temp.x; y = temp.y; z = temp.z;
+		i++;
 	}
+
+	////debug
+	//std::ofstream del_point("1111.asc");
+	//for (int i = 0; i < floor.P_origin.size(); i++){
+	//	del_point << floor.P_origin[i].x << " " << floor.P_origin[i].y << " " << floor.P_origin[i].z << endl;
+	//}
+	////////
+
 	cout << "Start fitting the plane" << endl;
 	floor.fitting();
 	cout << "Finish fitting the plane" << endl;
