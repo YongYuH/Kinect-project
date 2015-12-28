@@ -1133,13 +1133,31 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	watershed(binaryimage);
 	cv::dilate(binaryimage, Image_de, cv::Mat(), cv::Point(-1, -1), 6, 1, 1);
 	cv::erode(Image_de, Image_de, cv::Mat(), cv::Point(-1, -1), 5, 1, 1);
+	cv::Mat labels;
+	cv::Mat stats;
+	cv::Mat centroids;
+	int num = cv::connectedComponentsWithStats(Image_de, labels, stats, centroids, 8, CV_32S);
+	int area;
+	int max_area = 500;
+	int max_area_id = 1;
+	for (int i = 1; i < num; i++){
+		area = stats.at<int>(i, cv::CC_STAT_AREA);
+		if (area>max_area){
+			max_area = area;
+			max_area_id = i;
+		}
+	}
+	cv::Mat only1;
+	compare(labels, max_area_id, only1, cv::CMP_EQ);
+	cv::imwrite("123.bmp", only1);
+	
 	// Debug
 	//imwrite("d&e.bmp", Image_de);
-	cvFillHoles(Image_de);
+	cvFillHoles(only1);
 	// Debug
 	//imwrite("flood.bmp", Image_de);
 	cv::Mat blurImg;
-	medianBlur(Image_de, blurImg, 3);
+	medianBlur(only1, blurImg, 3);
 
 	cv::Mat afterdil;
 	cv::dilate(blurImg, afterdil, cv::Mat(), cv::Point(-1, -1), 8, 1, 1);

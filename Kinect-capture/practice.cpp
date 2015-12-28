@@ -725,41 +725,41 @@ void PlaneFit(Plane &floor)
 	normal_axis << floor.a << " " << floor.b << " " << floor.c << " " << floor.d << " " << endl;
 }
 
-void cal_center(Point &center)
-{
-	std::fstream center_point;
-	center_point.open("center_point.asc", std::ios::in);
-	Plane floor;
-	Point temp;
-	double x, y, z;
-	double x1 = 0, y1 = 0, z1 = 0;
-	int i = 0;
-	int count = 1;
-	while (center_point >> temp.x >> temp.y >> temp.z)
-	{
-		if (i == 0)
-		{
-			x1 = temp.x; y1 = temp.y; z1 = temp.z;
-		}
-
-		if (i > 0)
-		{
-			if (temp.x == x&&temp.y == y&&temp.z == z)
-			{
-
-			}
-			else
-			{
-				x1 = x1 + temp.x; y1 = y1 + temp.y; z1 = z1 + temp.z;
-				count++;
-			}
-
-		}
-		x = temp.x; y = temp.y; z = temp.z;
-		i++;
-	}
-	cout << x1 / count << " " << y1 / count << " " << z1 / count << endl;
-	center.x = x1 / count;
-	center.y = y1 / count;
-	center.z = z1 / count;
-}
+//void cal_center(Point &center)
+//{
+//	std::fstream center_point;
+//	center_point.open("center_point.asc", std::ios::in);
+//	Plane floor;
+//	Point temp;
+//	double x, y, z;
+//	double x1 = 0, y1 = 0, z1 = 0;
+//	int i = 0;
+//	int count = 1;
+//	while (center_point >> temp.x >> temp.y >> temp.z)
+//	{
+//		if (i == 0)
+//		{
+//			x1 = temp.x; y1 = temp.y; z1 = temp.z;
+//		}
+//
+//		if (i > 0)
+//		{
+//			if (temp.x == x&&temp.y == y&&temp.z == z)
+//			{
+//
+//			}
+//			else
+//			{
+//				x1 = x1 + temp.x; y1 = y1 + temp.y; z1 = z1 + temp.z;
+//				count++;
+//			}
+//
+//		}
+//		x = temp.x; y = temp.y; z = temp.z;
+//		i++;
+//	}
+//	cout << x1 / count << " " << y1 / count << " " << z1 / count << endl;
+//	center.x = x1 / count;
+//	center.y = y1 / count;
+//	center.z = z1 / count;
+//}

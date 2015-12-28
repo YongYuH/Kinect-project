@@ -1,1 +1,16 @@
-﻿
+﻿已經開始建置於 2015/12/28 下午 04:43:57。
+     1>節點 2 (Build 目標) 上的專案 "E:\GITHUB CODE\Kinect-project\Kinect-capture\Kinect-capture.vcxproj"。
+     1>Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"E:\GITHUB CODE\Kinect-project\Debug\Kinect-capture.exe" /INCREMENTAL /NOLOGO /LIBPATH:"E:\GITHUB CODE\Kinect-project\\ExternalLib\Lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\Include\Manifest\dpiaware.manifest" /DEBUG /PDB:"E:\GITHUB CODE\Kinect-project\Debug\Kinect-capture.pdb" /SUBSYSTEM:WINDOWS /TLBID:1 /ENTRY:"wWinMainCRTStartup" /DYNAMICBASE /NXCOMPAT /IMPLIB:"E:\GITHUB CODE\Kinect-project\Debug\Kinect-capture.lib" /MACHINE:X86 "Debug\Kinect-capture.res"
+         "Debug\Kinect-capture.obj"
+         "Debug\Kinect-captureDlg.obj"
+         Debug\matrix_cal.obj
+         Debug\Plane.obj
+         Debug\practice.obj
+         Debug\stdafx.obj
+         Kinect-capture.vcxproj -> E:\GITHUB CODE\Kinect-project\Debug\Kinect-capture.exe
+     1>專案 "E:\GITHUB CODE\Kinect-project\Kinect-capture\Kinect-capture.vcxproj" (Build 目標) 建置完成。
+
+建置成功。
+
+經過時間 00:00:01.84
