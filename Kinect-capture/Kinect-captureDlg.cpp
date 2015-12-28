@@ -11,6 +11,8 @@
 #include <math.h>
 #include <sstream>
 #include <string>
+// Plane fit library from Robotic & Automatic Lab in NCKU mechanical engineering department 
+#include "Plane.h"
 
 // Play the sound effect
 #include <Mmsystem.h>
@@ -25,9 +27,9 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+
 // Link OpenCV Library
 #define OPENCV300
-
 #ifdef OPENCV300
 #ifdef _DEBUG
 #pragma comment( lib, "opencv_ts300d.lib" )
@@ -44,13 +46,24 @@
 
 using namespace std;
 
-// Threshold for mask (unit:m)
+// Threshold for human mask (unit:m)
 #define ANKLE_HEIGHT (750)
 #define X_BACK (3.300)
 #define X_FRONT (1.900)
 #define Y_LEFT (0.690)
 #define Y_RIGHT (-0.690)
 #define Z_HEIGHT (-0.950)
+// Threshold for board mask (unit:pixel)
+#define ROW_SMALL (600)
+#define ROW_BIG (1000)
+#define COL_SMALL (700)
+#define COL_BIG (1300)
+
+float X_back_human;
+float X_front_human;
+float Y_left_human;
+float Y_right_human;
+float Z_human;
 
 // global variables
 IKinectSensor*		g_pSensor = nullptr;
@@ -114,30 +127,30 @@ char g_human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
 char g_color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
 
 void default_sensor() {
-	cout << "Try to get default sensor" << endl;
+	std::cout << "Try to get default sensor" << std::endl;
 	if (GetDefaultKinectSensor(&g_pSensor) != S_OK) {
-		cerr << "Get Sensor failed" << endl;
+		std::cerr << "Get Sensor failed" << std::endl;
 		return;
 	}
 
-	cout << "Try to open sensor" << endl;
+	std::cout << "Try to open sensor" << std::endl;
 	if (g_pSensor->Open() != S_OK)	 {
-		cerr << "Can't open sensor" << endl;
+		std::cerr << "Can't open sensor" << std::endl;
 		return;
 	}
 }
 
 void color_source() {
-	cout << "Try to get color source" << endl;
+	std::cout << "Try to get color source" << std::endl;
 	// Get frame source
 	IColorFrameSource* pFrameSource = nullptr;
 	if (g_pSensor->get_ColorFrameSource(&pFrameSource) != S_OK) {
-		cerr << "Can't get color frame source" << endl;
+		std::cerr << "Can't get color frame source" << std::endl;
 		return;
 	}
 
 	// Get frame description
-	cout << "get color frame description" << endl;
+	std::cout << "get color frame description" << std::endl;
 	IFrameDescription* pFrameDescription = nullptr;
 	if (pFrameSource->get_FrameDescription(&pFrameDescription) == S_OK)	{
 		pFrameDescription->get_Width(&g_iColorWidth);
@@ -156,29 +169,29 @@ void color_source() {
 	pFrameDescription = nullptr;
 
 	// get frame reader
-	cout << "Try to get color frame reader" << endl;
+	std::cout << "Try to get color frame reader" << std::endl;
 	if (pFrameSource->OpenReader(&g_pColorFrameReader) != S_OK) {
-		cerr << "Can't get color frame reader" << endl;
+		std::cerr << "Can't get color frame reader" << std::endl;
 		return;
 	}
 
 	// release Frame source
-	cout << "Release frame source" << endl;
+	std::cout << "Release frame source" << std::endl;
 	pFrameSource->Release();
 	pFrameSource = nullptr;
 }
 
 void depth_source() {
-	cout << "Try to get depth source" << endl;
+	std::cout << "Try to get depth source" << std::endl;
 	// Get frame source
 	IDepthFrameSource* pFrameSource = nullptr;
 	if (g_pSensor->get_DepthFrameSource(&pFrameSource) != S_OK) {
-		cerr << "Can't get depth frame source" << endl;
+		std::cerr << "Can't get depth frame source" << std::endl;
 		return;
 	}
 
 	// Get frame description
-	cout << "get depth frame description" << endl;
+	std::cout << "get depth frame description" << std::endl;
 	IFrameDescription* pFrameDescription = nullptr;
 	if (pFrameSource->get_FrameDescription(&pFrameDescription) == S_OK) {
 		pFrameDescription->get_Width(&g_iDepthWidth);
@@ -190,30 +203,30 @@ void depth_source() {
 	pFrameDescription = nullptr;
 
 	// get frame reader
-	cout << "Try to get depth frame reader" << endl;
+	std::cout << "Try to get depth frame reader" << std::endl;
 	if (pFrameSource->OpenReader(&g_pDepthFrameReader) != S_OK) {
-		cerr << "Can't get depth frame reader" << endl;
+		std::cerr << "Can't get depth frame reader" << std::endl;
 		return;
 	}
 
 	// release Frame source
-	cout << "Release frame source" << endl;
+	std::cout << "Release frame source" << std::endl;
 	pFrameSource->Release();
 	pFrameSource = nullptr;
 }
 
 void body_source() {
-	cout << "Try to get body source" << endl;
+	std::cout << "Try to get body source" << std::endl;
 	// Get frame source
 	IBodyFrameSource* pFrameSource = nullptr;
 	if (g_pSensor->get_BodyFrameSource(&pFrameSource) != S_OK) {
-		cerr << "Can't get body frame source" << endl;
+		std::cerr << "Can't get body frame source" << std::endl;
 		return;
 	}
 
 	// Get the number of body
 	if (pFrameSource->get_BodyCount(&g_iBodyCount) != S_OK) {
-		cerr << "Can't get body count" << std::endl;
+		std::cerr << "Can't get body count" << std::endl;
 		return;
 	}
 	std::cout << "Can trace " << g_iBodyCount << " bodies" << std::endl;
@@ -222,14 +235,14 @@ void body_source() {
 		g_aBodyData[i] = nullptr;
 
 	// get frame reader
-	cout << "Try to get body frame reader" << endl;
+	std::cout << "Try to get body frame reader" << std::endl;
 	if (pFrameSource->OpenReader(&g_pBodyFrameReader) != S_OK) {
-		cerr << "Can't get body frame reader" << endl;
+		std::cerr << "Can't get body frame reader" << std::endl;
 		return;
 	}
 
 	// release Frame source
-	cout << "Release frame source" << endl;
+	std::cout << "Release frame source" << std::endl;
 	pFrameSource->Release();
 	pFrameSource = nullptr;
 }
@@ -570,32 +583,44 @@ void human_mask()
 
 	// output human point cloud above the ankle segmented by bounding box
 	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
-		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
-			human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
 			color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-				<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-				<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
+							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+		}
+	}
+
+	for (long int i = 0; i < width * ANKLE_HEIGHT; i = i + 9) {
+		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
+			human_3Dpoints  << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
 		}
 	}
 
 	// output human point cloud below the ankle segmented by Absdiff  
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
 		if (idx[i] == 1) {
-			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > X_FRONT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[i].Z < X_BACK && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_LEFT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_RIGHT && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_HEIGHT) {
+			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
+				color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
+								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
+								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
+								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
+								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
+								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+			}
+		}
+	}
+
+	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i = i + 9) {
+		if (idx[i] == 1) {
+			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
 				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
 					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
 					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
-				color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-					<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
 			}
 		}
 	}
@@ -610,13 +635,7 @@ void human_mask()
 }
 
 
-// Ray:global variable
-#include "Plane.h"
 
-#define ROW_SMALL (600)
-#define ROW_BIG (1000)
-#define COL_SMALL (700)
-#define COL_BIG (1200)
 
 cv::Mat Imageresult;
 cv::Mat binaryimage;
@@ -643,15 +662,15 @@ void filter()
 
 	// initialize the output asc file
 	std::ofstream floor_asc("floor_point.asc");
-	cout << "Starting filtering the floor points!" << endl;
+	std::cout << "Starting filtering the floor points!" << std::endl;
 	for (long int i = 0; i < g_uColorPointNum; i++) {
 		if (idx[i] == 1) {		
 			if (g_pboardPoints[i].Z > X_FRONT && g_pboardPoints[i].Z != 0 && g_pboardPoints[i].Z < X_BACK && g_pboardPoints[i].X < Y_LEFT && g_pboardPoints[i].X > Y_RIGHT && g_pboardPoints[i].Y > Z_HEIGHT) {
-				floor_asc << -g_pboardPoints[i].Z << " " << g_pboardPoints[i].X << " "  << g_pboardPoints[i].Y << " " << endl;
+				floor_asc << -g_pboardPoints[i].Z << " " << g_pboardPoints[i].X << " "  << g_pboardPoints[i].Y << " " << std::endl;
 			}
 		}
 	}
-	cout << "Finishing filtering the floor points!" << endl;
+	std::cout << "Finishing filtering the floor points!" << std::endl;
 	// release the memory of array
 	delete[] idx;
 
@@ -662,7 +681,7 @@ void filter()
 }
 void Mask_center();
 void Center_filter();
-void cal_center(Point &center);
+//void cal_center(Point &center);
 void PlaneFit(Plane &floor);
 void bottle_filter();
 void watershed(cv::Mat &input);
@@ -1007,7 +1026,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Background()
 	cv::destroyWindow(window_name);
 	pCFrame->Release();
 	pCFrame = nullptr;
-	cout << "Finish outputting the image of the background." << endl;
+	std::cout << "Finish outputting the image of the background." << std::endl;
 }
 
 
@@ -1047,12 +1066,12 @@ void CKinectcaptureDlg::OnBnClickedButton_Output()
 		sprintf(g_human_3Dpoints_asc, "human_3Dpoints%d.asc", g_CaptureNum);
 		sprintf(g_color_human_3Dpoints_cpt, "color_human_3Dpoints%d.txt", g_CaptureNum);
 		human_mask();
-		cout << g_human_3Dpoints_asc << " has been finished!" << endl;
+		std::cout << g_human_3Dpoints_asc << " has been finished!" << std::endl;
 	}
 	delete[] g_ptotalPoints;
-	cout << "g_ptotalPoints has been deleted!" << endl;
+	std::cout << "g_ptotalPoints has been deleted!" << std::endl;
 	delete[] g_pTotalColor;
-	cout << "g_pTotalColor has been deleted!" << endl;
+	std::cout << "g_pTotalColor has been deleted!" << std::endl;
 }
 
 
@@ -1083,7 +1102,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	}
 	pCFrame->Release();
 	pCFrame = nullptr;
-	cout << "Finish outputting the image of the board." << endl;
+	std::cout << "Finish outputting the image of the board." << std::endl;
 
 	// Read depth data
 	IDepthFrame* pDFrame = nullptr;
@@ -1114,13 +1133,31 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	watershed(binaryimage);
 	cv::dilate(binaryimage, Image_de, cv::Mat(), cv::Point(-1, -1), 6, 1, 1);
 	cv::erode(Image_de, Image_de, cv::Mat(), cv::Point(-1, -1), 5, 1, 1);
+	cv::Mat labels;
+	cv::Mat stats;
+	cv::Mat centroids;
+	int num = cv::connectedComponentsWithStats(Image_de, labels, stats, centroids, 8, CV_32S);
+	int area;
+	int max_area = 500;
+	int max_area_id = 1;
+	for (int i = 1; i < num; i++){
+		area = stats.at<int>(i, cv::CC_STAT_AREA);
+		if (area>max_area){
+			max_area = area;
+			max_area_id = i;
+		}
+	}
+	cv::Mat only1;
+	compare(labels, max_area_id, only1, cv::CMP_EQ);
+	cv::imwrite("123.bmp", only1);
+	
 	// Debug
 	//imwrite("d&e.bmp", Image_de);
-	cvFillHoles(Image_de);
+	cvFillHoles(only1);
 	// Debug
 	//imwrite("flood.bmp", Image_de);
 	cv::Mat blurImg;
-	medianBlur(Image_de, blurImg, 3);
+	medianBlur(only1, blurImg, 3);
 
 	cv::Mat afterdil;
 	cv::dilate(blurImg, afterdil, cv::Mat(), cv::Point(-1, -1), 8, 1, 1);
@@ -1140,7 +1177,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	Imagebg.release();
 	Imageresult.release();
 	binaryimage.release();	
-	cout << "Finish outputting the mask of the board." << endl;
+	std::cout << "Finish outputting the mask of the board." << std::endl;
 }
 
 
@@ -1154,9 +1191,18 @@ void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
 
 	Point center_proj;
 	center_proj = floor.Projection(center_point);
-	cout << center_proj.x << " " << center_proj.y << " " << center_proj.z << endl;
+	std::cout << center_proj.x << " " << center_proj.y << " " << center_proj.z << std::endl;
 	std::ofstream center_only_one("center_proj.asc");
 	center_only_one << center_proj.x << " " << center_proj.y << " " << center_proj.z << " " << endl;
 	center_only_one.close();
-	cout << "Finishing output principal axis and the ground plane!" << endl;
+
+	////calculate bounding box for human
+	X_back_human = center_proj.x + 0.7;
+	X_front_human = center_proj.x - 0.7;
+	Y_left_human = center_proj.y + 0.7;
+	Y_right_human = center_proj.y - 0.7;
+	Z_human = center_proj.z - 0.1;
+	/////////
+
+	std::cout << "Finishing output principal axis and the ground plane!" << std::endl;
 }
