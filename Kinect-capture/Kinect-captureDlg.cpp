@@ -14,6 +14,9 @@
 // Plane fit library from Robotic & Automatic Lab in NCKU mechanical engineering department 
 #include "Plane.h"
 
+// OpenMP
+#include <omp.h>
+
 // Play the sound effect
 #include <Mmsystem.h>
 #pragma comment(lib,"Winmm.lib")
@@ -120,11 +123,6 @@ float g_current_total_velocity = 0.0;
 float g_current_average_velocity = 0.0;
 float g_total_velocity = 0.0;
 float g_average_velocity = 0.0;
-
-// global output file name
-char g_watershed_segment_image[30] = "watershed_segment0.bmp";
-char g_human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
-char g_color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
 
 void default_sensor() {
 	std::cout << "Try to get default sensor" << std::endl;
@@ -554,14 +552,14 @@ void end_joint_driven() {
 	g_pSensor = nullptr;
 }
 
-void human_mask()
+void human_mask(int CaptureNum, char* watershed_segment_image, char* human_3Dpoints_asc, char* color_human_3Dpoints_cpt)
 {
 	// Size of input picture, the watershed segmented picture
 	const int width = g_iColorWidth;
 	const int height = g_iColorHeight;
 	const long int total_pixels = width * height;
 
-	cv::Mat img = cv::imread(g_watershed_segment_image);
+	cv::Mat img = cv::imread(watershed_segment_image);
 	// An one dimensional array to index whether the grayscale of each pixel is white
 	short* idx;
 	idx = new short[total_pixels];
@@ -578,49 +576,49 @@ void human_mask()
 	}
 
 	// initialize the output asc file
-	std::ofstream human_3Dpoints(g_human_3Dpoints_asc);
-	std::ofstream color_human_cpt(g_color_human_3Dpoints_cpt);
+	std::ofstream human_3Dpoints(human_3Dpoints_asc);
+	std::ofstream color_human_cpt(color_human_3Dpoints_cpt);
 
 	// output human point cloud above the ankle segmented by bounding box
 	for (long int i = 0; i < width * ANKLE_HEIGHT; i++) {
-		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
-			color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-							<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+		if (g_ptotalPoints[(CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Y > Z_human) {
+			color_human_cpt << -g_ptotalPoints[CaptureNum * total_pixels + i].Z << " "
+							<< g_ptotalPoints[CaptureNum * total_pixels + i].X << " "
+							<< g_ptotalPoints[CaptureNum * total_pixels + i].Y << " "
+							<< (unsigned short)(g_pTotalColor[4 * CaptureNum * total_pixels + 4 * i]) << " "
+							<< (unsigned short)(g_pTotalColor[4 * CaptureNum * total_pixels + 4 * i + 1]) << " "
+							<< (unsigned short)(g_pTotalColor[4 * CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
 		}
 	}
 
 	for (long int i = 0; i < width * ANKLE_HEIGHT; i = i + 9) {
-		if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
-			human_3Dpoints  << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-							<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+		if (g_ptotalPoints[(CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Y > Z_human) {
+			human_3Dpoints  << -g_ptotalPoints[CaptureNum * total_pixels + i].Z << " "
+							<< g_ptotalPoints[CaptureNum * total_pixels + i].X << " "
+							<< g_ptotalPoints[CaptureNum * total_pixels + i].Y << " " << endl;
 		}
 	}
 
 	// output human point cloud below the ankle segmented by Absdiff  
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i++) {
 		if (idx[i] == 1) {
-			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
-				color_human_cpt << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-								<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " "
-								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i]) << " "
-								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 1]) << " "
-								<< (unsigned short)(g_pTotalColor[4 * g_CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
+			if (g_ptotalPoints[(CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Y > Z_human) {
+				color_human_cpt << -g_ptotalPoints[CaptureNum * total_pixels + i].Z << " "
+								<< g_ptotalPoints[CaptureNum * total_pixels + i].X << " "
+								<< g_ptotalPoints[CaptureNum * total_pixels + i].Y << " "
+								<< (unsigned short)(g_pTotalColor[4 * CaptureNum * total_pixels + 4 * i]) << " "
+								<< (unsigned short)(g_pTotalColor[4 * CaptureNum * total_pixels + 4 * i + 1]) << " "
+								<< (unsigned short)(g_pTotalColor[4 * CaptureNum * total_pixels + 4 * i + 2]) << " " << endl;
 			}
 		}
 	}
 
 	for (long int i = (width * ANKLE_HEIGHT); i < total_pixels; i = i + 9) {
 		if (idx[i] == 1) {
-			if (g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(g_CaptureNum)* total_pixels + i].Y > Z_human) {
-				human_3Dpoints << -g_ptotalPoints[g_CaptureNum * total_pixels + i].Z << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].X << " "
-					<< g_ptotalPoints[g_CaptureNum * total_pixels + i].Y << " " << endl;
+			if (g_ptotalPoints[(CaptureNum)* total_pixels + i].Z > -X_back_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z != 0 && g_ptotalPoints[(CaptureNum)* total_pixels + i].Z < -X_front_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X < Y_left_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].X > Y_right_human && g_ptotalPoints[(CaptureNum)* total_pixels + i].Y > Z_human) {
+				human_3Dpoints  << -g_ptotalPoints[CaptureNum * total_pixels + i].Z << " "
+								<< g_ptotalPoints[CaptureNum * total_pixels + i].X << " "
+								<< g_ptotalPoints[CaptureNum * total_pixels + i].Y << " " << endl;
 			}
 		}
 	}
@@ -1061,12 +1059,24 @@ void CKinectcaptureDlg::OnBnClickedButton_Capture()
 
 void CKinectcaptureDlg::OnBnClickedButton_Output()
 {
-	for (g_CaptureNum = 0; g_CaptureNum < 8; g_CaptureNum++) {
-		sprintf(g_watershed_segment_image, "watershed_segment%d.bmp", g_CaptureNum);
-		sprintf(g_human_3Dpoints_asc, "human_3Dpoints%d.asc", g_CaptureNum);
-		sprintf(g_color_human_3Dpoints_cpt, "color_human_3Dpoints%d.txt", g_CaptureNum);
-		human_mask();
-		std::cout << g_human_3Dpoints_asc << " has been finished!" << std::endl;
+	int P = 4; // No. of threads
+	omp_set_num_threads(P);	
+
+	int CurrentCaptureNum;
+	char watershed_segment_image[30] = "watershed_segment0.bmp";
+	char human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
+	char color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
+
+	#pragma omp parallel private(CurrentCaptureNum, watershed_segment_image, human_3Dpoints_asc, color_human_3Dpoints_cpt)
+	{
+		#pragma omp for
+		for (CurrentCaptureNum = 0; CurrentCaptureNum < 8; CurrentCaptureNum++) {		
+			sprintf(watershed_segment_image, "watershed_segment%d.bmp", CurrentCaptureNum);
+			sprintf(human_3Dpoints_asc, "human_3Dpoints%d.asc", CurrentCaptureNum);
+			sprintf(color_human_3Dpoints_cpt, "color_human_3Dpoints%d.txt", CurrentCaptureNum);
+			human_mask(CurrentCaptureNum, watershed_segment_image, human_3Dpoints_asc, color_human_3Dpoints_cpt);
+			std::cout << human_3Dpoints_asc << " has been finished!" << std::endl;
+		}
 	}
 	delete[] g_ptotalPoints;
 	std::cout << "g_ptotalPoints has been deleted!" << std::endl;
@@ -1149,7 +1159,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	}
 	cv::Mat only1;
 	compare(labels, max_area_id, only1, cv::CMP_EQ);
-	cv::imwrite("123.bmp", only1);
+	cv::imwrite("max_area_board.bmp", only1);
 	
 	// Debug
 	//imwrite("d&e.bmp", Image_de);
