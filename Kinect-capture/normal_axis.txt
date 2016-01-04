@@ -1,3 +1,0 @@
-ax + by + cz = d
-coefficient of x: a, coefficient of y: b, coefficient of z:c , constant: d
-0.00264265 0.00128857 0.999996 -0.816236 
