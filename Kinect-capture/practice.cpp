@@ -657,17 +657,38 @@ int *Sobel1D(int len,int *arr,int masklen)
 	return aftermask;
 }
 
-void Find_contour(cv::Mat &input,int row_small,int row_big,int col_small,int col_big,int &k)
+void Find_contour(cv::Mat &input, int &k)
 {
-	int big = row_small;
-	int small = row_big;
+	//int big = row_small;
+	//int small = row_big;
+
+	int big = 0;
+	int small = input.cols;
 	cv::Mat contour(input.size(), CV_8UC1, cv::Scalar(0));
 	
-	for (int i = row_small; i < row_big ; i++)
+	//for (int i = row_small; i < row_big ; i++)
+	//{
+	//	for (int j = col_small; j < col_big ; j++)
+	//	{
+	//		if ((input.at<unsigned char>(i, j) == 0) && 
+	//			((input.at<unsigned char>(i + 1, j) == 255) ||
+	//			(input.at<unsigned char>(i - 1, j) == 255) ||
+	//			(input.at<unsigned char>(i, j + 1) == 255) ||
+	//			(input.at<unsigned char>(i, j - 1) == 255)))
+	//		{
+	//			contour.at<unsigned char>(i, j) = 255;
+	//			if (i>big){ big = i; }
+	//			if (i<small){ small = i; }
+	//		}
+
+	//	}
+	//}
+
+	for (int i = 1; i < input.rows-1; i++)
 	{
-		for (int j = col_small; j < col_big ; j++)
+		for (int j = 1; j < input.cols-1; j++)
 		{
-			if ((input.at<unsigned char>(i, j) == 0) && 
+			if ((input.at<unsigned char>(i, j) == 0) &&
 				((input.at<unsigned char>(i + 1, j) == 255) ||
 				(input.at<unsigned char>(i - 1, j) == 255) ||
 				(input.at<unsigned char>(i, j + 1) == 255) ||
@@ -680,6 +701,7 @@ void Find_contour(cv::Mat &input,int row_small,int row_big,int col_small,int col
 
 		}
 	}
+
 	k = (big - small) / 2;
 	input=contour.clone();
 }
@@ -704,25 +726,17 @@ bool intersection(cv::Point2f o1, cv::Point2f p1, cv::Point2f o2, cv::Point2f p2
 void PlaneFit(Plane &floor)
 {
 	std::fstream floor_point;
-	floor_point.open("floor_point.asc", std::ios::in);
+	floor_point.open(".\\coodinate_data\\floor_point.asc", std::ios::in);
 	//Plane floor;
 	Point temp;
 	double x, y, z;
 	int i = 0;
-	while (floor_point >> temp.x >> temp.y >> temp.z)
-	{
-		if (i == 0)
-		{
-			floor.P_origin.push_back(temp);
-		}
-		if (i > 0)
-		{
-			if (temp.x == x&&temp.y == y&&temp.z == z)
-			{
 
-			}
-			else
-			{
+	while (floor_point >> temp.x >> temp.y >> temp.z) {
+		if (i == 0) {
+			floor.P_origin.push_back(temp);
+		} else if (i > 0) {
+			if (!(temp.x == x && temp.y == y && temp.z == z)) {
 				floor.P_origin.push_back(temp);
 			}
 		}
@@ -740,7 +754,7 @@ void PlaneFit(Plane &floor)
 	cout << "Start fitting the plane" << endl;
 	floor.fitting();
 	cout << "Finish fitting the plane" << endl;
-	std::ofstream normal_axis("normal_axis.txt");
+	std::ofstream normal_axis(".\\coodinate_data\\normal_axis.txt");
 	normal_axis << "ax + by + cz = d" << endl;
 	normal_axis << "coefficient of x: a, " << "coefficient of y: b, " << "coefficient of z:c , " << "constant: d" << endl;
 	normal_axis << floor.a << " " << floor.b << " " << floor.c << " " << floor.d << " " << endl;
