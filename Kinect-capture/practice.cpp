@@ -657,17 +657,38 @@ int *Sobel1D(int len,int *arr,int masklen)
 	return aftermask;
 }
 
-void Find_contour(cv::Mat &input,int row_small,int row_big,int col_small,int col_big,int &k)
+void Find_contour(cv::Mat &input, int &k)
 {
-	int big = row_small;
-	int small = row_big;
+	//int big = row_small;
+	//int small = row_big;
+
+	int big = 0;
+	int small = input.cols;
 	cv::Mat contour(input.size(), CV_8UC1, cv::Scalar(0));
 	
-	for (int i = row_small; i < row_big ; i++)
+	//for (int i = row_small; i < row_big ; i++)
+	//{
+	//	for (int j = col_small; j < col_big ; j++)
+	//	{
+	//		if ((input.at<unsigned char>(i, j) == 0) && 
+	//			((input.at<unsigned char>(i + 1, j) == 255) ||
+	//			(input.at<unsigned char>(i - 1, j) == 255) ||
+	//			(input.at<unsigned char>(i, j + 1) == 255) ||
+	//			(input.at<unsigned char>(i, j - 1) == 255)))
+	//		{
+	//			contour.at<unsigned char>(i, j) = 255;
+	//			if (i>big){ big = i; }
+	//			if (i<small){ small = i; }
+	//		}
+
+	//	}
+	//}
+
+	for (int i = 1; i < input.rows-1; i++)
 	{
-		for (int j = col_small; j < col_big ; j++)
+		for (int j = 1; j < input.cols-1; j++)
 		{
-			if ((input.at<unsigned char>(i, j) == 0) && 
+			if ((input.at<unsigned char>(i, j) == 0) &&
 				((input.at<unsigned char>(i + 1, j) == 255) ||
 				(input.at<unsigned char>(i - 1, j) == 255) ||
 				(input.at<unsigned char>(i, j + 1) == 255) ||
@@ -680,6 +701,7 @@ void Find_contour(cv::Mat &input,int row_small,int row_big,int col_small,int col
 
 		}
 	}
+
 	k = (big - small) / 2;
 	input=contour.clone();
 }

@@ -11,6 +11,7 @@
 #include <math.h>
 #include <sstream>
 #include <string>
+#include <direct.h>
 // Plane fit library from Robotic & Automatic Lab in NCKU mechanical engineering department 
 #include "Plane.h"
 
@@ -52,18 +53,24 @@ using namespace std;
 // Threshold for human mask image
 #define BINARY_THRESHOLD 30
 
-// Threshold for human mask (unit:m)
+//// Threshold for human mask (unit:m)
 #define ANKLE_HEIGHT (750)
-#define X_BACK (3.300)
-#define X_FRONT (1.900)
-#define Y_LEFT (0.690)
-#define Y_RIGHT (-0.690)
-#define Z_HEIGHT (-0.950)
+#define X_BACK (5.000)				// original 3.3
+#define X_FRONT (0.500)				// original 1.9
+#define Y_LEFT (1.0)				// original 0.69
+#define Y_RIGHT (-1.0)				// original -0.69
+#define Z_HEIGHT (-0.950)			// original -0.95
+
 // Threshold for board mask (unit:pixel)
-#define ROW_SMALL (600)
-#define ROW_BIG (1000)
-#define COL_SMALL (700)
-#define COL_BIG (1300)
+//#define ROW_SMALL (600)
+//#define ROW_BIG (1000)
+//#define COL_SMALL (700)
+//#define COL_BIG (1300)
+
+char * folder_img = ".\\img";
+char * folder_human_asc = ".\\human_asc";
+char * folder_human_cpt = ".\\human_cpt";
+char * folder_coodinate_data = ".\\coodinate_data";
 
 float X_back_human;
 float X_front_human;
@@ -126,6 +133,8 @@ float g_current_total_velocity = 0.0;
 float g_current_average_velocity = 0.0;
 float g_total_velocity = 0.0;
 float g_average_velocity = 0.0;
+
+void cvFillHoles(cv::Mat &input);
 
 void default_sensor() {
 	std::cout << "Try to get default sensor" << std::endl;
@@ -638,12 +647,6 @@ void human_mask(int CaptureNum, char* watershed_segment_image, char* human_3Dpoi
 }
 
 
-
-
-cv::Mat Imageresult;
-cv::Mat binaryimage;
-cv::Mat Image_de;
-
 void onTrackbar(int position);
 void filter()
 {
@@ -688,7 +691,6 @@ void Center_filter();
 void PlaneFit(Plane &floor);
 void bottle_filter();
 void watershed(cv::Mat &input);
-void cvFillHoles(cv::Mat &input);
 void test(cv::Mat &input, int k);
 void corner_filter(Point &center_point)
 {
@@ -749,7 +751,7 @@ void corner_filter(Point &center_point)
 		}
 	}
 	// initialize the output asc file
-	std::ofstream corner_asc("corner_point.asc");
+	//std::ofstream corner_asc("corner_point.asc");
 
 	vector<double> x_corner;
 	vector<double> y_corner;
@@ -830,15 +832,15 @@ void corner_filter(Point &center_point)
 	y_sum4 /= y_corner.size();
 	z_sum4 /= z_corner.size();
 
-	corner_asc << -z_sum1 << " " << x_sum1 << " " << y_sum1 << endl;
-	corner_asc << -z_sum2 << " " << x_sum2 << " " << y_sum2 << endl;
-	corner_asc << -z_sum3 << " " << x_sum3 << " " << y_sum3 << endl;
-	corner_asc << -z_sum4 << " " << x_sum4 << " " << y_sum4 << endl;
+	//corner_asc << -z_sum1 << " " << x_sum1 << " " << y_sum1 << endl;
+	//corner_asc << -z_sum2 << " " << x_sum2 << " " << y_sum2 << endl;
+	//corner_asc << -z_sum3 << " " << x_sum3 << " " << y_sum3 << endl;
+	//corner_asc << -z_sum4 << " " << x_sum4 << " " << y_sum4 << endl;
 	
 	center_point.x = -(z_sum1 + z_sum2 + z_sum3 + z_sum4) / 4;
 	center_point.y = (x_sum1 + x_sum2 + x_sum3 + x_sum4) / 4;
 	center_point.z = (y_sum1 + y_sum2 + y_sum3 + y_sum4) / 4;
-	
+
 	// release the memory of array
 	delete[] idx1;
 	delete[] idx2;
@@ -846,13 +848,13 @@ void corner_filter(Point &center_point)
 	delete[] idx4;
 
 	// close the asc file
-	corner_asc.close();
+	//corner_asc.close();
 	img1.release();
 	img2.release();
 	img3.release();
 	img4.release();
 }
-void Find_contour(cv::Mat &input, int row_small, int row_big, int col_small, int col_big, int &k);
+void Find_contour(cv::Mat &input, int &k);
 
 // Debug:output the velocity of joints
 //ofstream current_average_velocityTXT("current_average_velocity.txt");
@@ -1108,6 +1110,9 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	}
 
 	// Use OpenCV to get the image from Kinect
+	cv::Mat Imageresult;
+	cv::Mat binaryimage;
+	cv::Mat Image_de;
 	cv::Mat	background_board_color(g_iColorHeight, g_iColorWidth, CV_8UC4);
 	cv::Mat background_board_gray(g_iColorHeight, g_iColorWidth, CV_8UC4);
 	if (pCFrame->CopyConvertedFrameDataToArray(g_uColorBufferSize, background_board_color.data, ColorImageFormat_Bgra) == S_OK)	{
@@ -1178,11 +1183,13 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	cv::dilate(blurImg, afterdil, cv::Mat(), cv::Point(-1, -1), 8, 1, 1);
 	cv::Mat Image_bound;
 	cv::subtract(afterdil, blurImg, Image_bound);
-	cv::imwrite("mask.bmp", Image_bound);
 
+	//_mkdir(".\\img");
+	//cv::imwrite(".\\img\\mask.bmp", Image_bound);
+	cv::imwrite("mask.bmp", Image_bound);
 	int k = 0;
 	
-	Find_contour(blurImg, ROW_SMALL, ROW_BIG, COL_SMALL, COL_BIG, k);
+	Find_contour(blurImg, k);
 	// Debug
 	//cv::imshow("test", blurImg);
 	//cv::waitKey(0);
@@ -1220,4 +1227,6 @@ void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
 	/////////
 
 	std::cout << "Finishing output principal axis and the ground plane!" << std::endl;
+
+	
 }
