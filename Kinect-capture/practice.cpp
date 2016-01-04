@@ -726,22 +726,26 @@ bool intersection(cv::Point2f o1, cv::Point2f p1, cv::Point2f o2, cv::Point2f p2
 void PlaneFit(Plane &floor)
 {
 	std::fstream floor_point;
-	floor_point.open("floor_point.asc", std::ios::in);
+	floor_point.open(".\\coodinate_data\\floor_point.asc", std::ios::in);
 	//Plane floor;
 	Point temp;
 	double x, y, z;
+	int i = 0;
 	while (floor_point >> temp.x >> temp.y >> temp.z) {
-		x = temp.x; y = temp.y; z = temp.z;
-		if (temp.x == x && temp.y == y && temp.z == z) {
-
-		} else {
+		if (i == 0) {
 			floor.P_origin.push_back(temp);
+		} else if (i > 0) {
+			if (!(temp.x == x && temp.y == y && temp.z == z)) {
+				floor.P_origin.push_back(temp);
+			}
 		}
+		x = temp.x; y = temp.y; z = temp.z;
+		i++;
 	}
 	cout << "Start fitting the plane" << endl;
 	floor.fitting();
 	cout << "Finish fitting the plane" << endl;
-	std::ofstream normal_axis("normal_axis.txt");
+	std::ofstream normal_axis(".\\coodinate_data\\normal_axis.txt");
 	normal_axis << "ax + by + cz = d" << endl;
 	normal_axis << "coefficient of x: a, " << "coefficient of y: b, " << "coefficient of z:c , " << "constant: d" << endl;
 	normal_axis << floor.a << " " << floor.b << " " << floor.c << " " << floor.d << " " << endl;

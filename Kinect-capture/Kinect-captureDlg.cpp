@@ -67,7 +67,6 @@ using namespace std;
 //#define COL_SMALL (700)
 //#define COL_BIG (1300)
 
-char * folder_img = ".\\img";
 char * folder_human_asc = ".\\human_asc";
 char * folder_human_cpt = ".\\human_cpt";
 char * folder_coodinate_data = ".\\coodinate_data";
@@ -667,7 +666,8 @@ void filter()
 	}
 
 	// initialize the output asc file
-	std::ofstream floor_asc("floor_point.asc");
+	_mkdir(folder_coodinate_data);
+	std::ofstream floor_asc(".\\coodinate_data\\floor_point.asc");
 	std::cout << "Starting filtering the floor points!" << std::endl;
 	for (long int i = 0; i < g_uColorPointNum; i++) {
 		if (idx[i] == 1) {		
@@ -1066,21 +1066,24 @@ void CKinectcaptureDlg::OnBnClickedButton_Capture()
 
 void CKinectcaptureDlg::OnBnClickedButton_Output()
 {
+	_mkdir(folder_human_asc);
+	_mkdir(folder_human_cpt);
+
 	int P = 4; // No. of threads
-	omp_set_num_threads(P);	
+	omp_set_num_threads(P);
 
 	int CurrentCaptureNum;
 	char watershed_segment_image[30] = "watershed_segment0.bmp";
-	char human_3Dpoints_asc[30] = "human_3Dpoints0.asc";
-	char color_human_3Dpoints_cpt[30] = "color_human_3Dpoints0.txt";
+	char human_3Dpoints_asc[50] = ".\\human_asc\\human_3Dpoints0.asc";
+	char color_human_3Dpoints_cpt[50] = ".\\human_cpt\\color_human_3Dpoints0.txt";
 
 	#pragma omp parallel private(CurrentCaptureNum, watershed_segment_image, human_3Dpoints_asc, color_human_3Dpoints_cpt)
 	{
 		#pragma omp for
 		for (CurrentCaptureNum = 0; CurrentCaptureNum < 8; CurrentCaptureNum++) {		
 			sprintf(watershed_segment_image, "watershed_segment%d.bmp", CurrentCaptureNum);
-			sprintf(human_3Dpoints_asc, "human_3Dpoints%d.asc", CurrentCaptureNum);
-			sprintf(color_human_3Dpoints_cpt, "color_human_3Dpoints%d.txt", CurrentCaptureNum);
+			sprintf(human_3Dpoints_asc, ".\\human_asc\\human_3Dpoints%d.asc", CurrentCaptureNum);
+			sprintf(color_human_3Dpoints_cpt, ".\\human_cpt\\color_human_3Dpoints%d.txt", CurrentCaptureNum);
 			human_mask(CurrentCaptureNum, watershed_segment_image, human_3Dpoints_asc, color_human_3Dpoints_cpt);
 			std::cout << human_3Dpoints_asc << " has been finished!" << std::endl;
 		}
@@ -1184,8 +1187,6 @@ void CKinectcaptureDlg::OnBnClickedButton_Release()
 	cv::Mat Image_bound;
 	cv::subtract(afterdil, blurImg, Image_bound);
 
-	//_mkdir(".\\img");
-	//cv::imwrite(".\\img\\mask.bmp", Image_bound);
 	cv::imwrite("mask.bmp", Image_bound);
 	int k = 0;
 	
@@ -1214,7 +1215,7 @@ void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
 	Point center_proj;
 	center_proj = floor.Projection(center_point);
 	std::cout << center_proj.x << " " << center_proj.y << " " << center_proj.z << std::endl;
-	std::ofstream center_only_one("center_proj.asc");
+	std::ofstream center_only_one(".\\coodinate_data\\center_proj.asc");
 	center_only_one << center_proj.x << " " << center_proj.y << " " << center_proj.z << " " << endl;
 	center_only_one.close();
 
@@ -1227,6 +1228,4 @@ void CKinectcaptureDlg::OnBnClickedButton_Coordinate()
 	/////////
 
 	std::cout << "Finishing output principal axis and the ground plane!" << std::endl;
-
-	
 }
