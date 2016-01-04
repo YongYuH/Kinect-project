@@ -49,6 +49,9 @@
 
 using namespace std;
 
+// Threshold for human mask image
+#define BINARY_THRESHOLD 30
+
 // Threshold for human mask (unit:m)
 #define ANKLE_HEIGHT (750)
 #define X_BACK (3.300)
@@ -308,7 +311,7 @@ void absdiff(char* background_color_image, char* human_color_image, char* absdif
 	cv::Mat absdiff_gray = cv::Mat(cv::Size(absdiff_color.rows, absdiff_color.cols), CV_8UC1);
 	cv::Mat absdiff_binary = cv::Mat(cv::Size(absdiff_color.rows, absdiff_color.cols), CV_8UC1);
 	cv::cvtColor(absdiff_color, absdiff_gray, CV_RGB2GRAY);
-	cv::threshold(absdiff_gray, absdiff_binary, 40, 255, cv::THRESH_BINARY);
+	cv::threshold(absdiff_gray, absdiff_binary, BINARY_THRESHOLD, 255, cv::THRESH_BINARY);
 	// Save the difference image
 	cv::imwrite(absdiff_color_image, absdiff_color);
 	cv::imwrite(absdiff_gray_image, absdiff_gray);
@@ -328,7 +331,7 @@ void watershed(char* absdiff_color_image, char* watershed_segment_image)
 	cv::Mat absdiff_gray = cv::Mat(cv::Size(absdiff_color.rows, absdiff_color.cols), CV_8UC1);
 	cv::cvtColor(absdiff_color, absdiff_gray, CV_BGR2GRAY);
 	cv::Mat absdiff_binary = cv::Mat(cv::Size(absdiff_color.rows, absdiff_color.cols), CV_8UC1);
-	cv::threshold(absdiff_gray, absdiff_binary, 40, 255, cv::THRESH_BINARY);
+	cv::threshold(absdiff_gray, absdiff_binary, BINARY_THRESHOLD, 255, cv::THRESH_BINARY);
 
 	// Eliminate noise and smaller objects
 	cv::Mat fg;
@@ -348,6 +351,8 @@ void watershed(char* absdiff_color_image, char* watershed_segment_image)
 
 	markers.convertTo(markers, CV_8U);
 	cv::threshold(markers, markers, 128, 255, cv::THRESH_BINARY);
+	// Fill black holes in white region
+	cvFillHoles(markers);
 	cv::imwrite(watershed_segment_image, markers);
 
 	// Release memory of opencv matrix
