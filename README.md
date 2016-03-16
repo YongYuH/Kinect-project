@@ -6,18 +6,23 @@
   2. Get the camera coordinate information from the board on the ground. 
     - (In order to get the information to do the cylindrical coodinate transform)
 
+## [Demo Video](https://www.youtube.com/watch?v=VvN5n3h6lOk)
+
+
+## Software to view the output point cloud data (.asc and .txt)
+- [CloudCompare](http://www.danielgm.net/cc/)
+
 ## Environment Setting
 - Windows 8
 - Visual Studio 2013
 - MFC 4.5
 
-
 ## Hardware 
 - Kinect for Xbox One (v2)
 
-## Software (In the ExternalLib folder)
-- Kinect SDK v2.0
-- OpenCV 3.0.0
+## Software needed for executing the program (In the ExternalLib folder)
+- [Kinect SDK v2.0](https://www.microsoft.com/en-us/download/details.aspx?id=44561)
+- [OpenCV 3.0.0](http://opencv.org/downloads.html)
 
 ## Update Information
 ### 2015/12/15 
@@ -27,6 +32,9 @@
 
 ### 2015/12/20
 ###### Able to get information of the board (coordinates of corners and the equation of the plane of the board)
+
+### 2016/3/16
+###### Add demo video and link of CloudCompare
 
 ## Capture process
 1. Click the "Background" button to get the image of background.
